@@ -38,7 +38,8 @@
   <a href="#get-in-touch" title="Talk to us">Get in Touch</a>
 </p>
 
-<br/>
+> [!IMPORTANT]
+> A testable library with a user-guide is coming soon.
 
 ## Overview
 
