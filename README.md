@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://lvgl.io/safe" title="LVGL Safe homepage">Website</a> |
-  <a href="https://github.com/lvgl/lvgl" title="The open-source LVGL library">LVGL</a> |
+  <a href="https://github.com/lvgl/lvgl" title="The open-source LVGL library">LVGL Open</a> |
   <a href="https://github.com/lvgl/lvgl_pro" title="The professional toolkit">LVGL Pro</a> |
   <a href="https://lvgl.io#contact" title="Talk to us about your needs in functional-safety">Contact</a>
 </p>
