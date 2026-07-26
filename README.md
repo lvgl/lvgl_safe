@@ -16,7 +16,7 @@
 <p align="center">
   LVGL Safe is a certification-ready UI Library for safety-critical products.
   It ships with the documentation and verification evidence that feeds directly into your
-  product's own certification process, across four target industries:
+  product's own certification process, across four target industries:<br/>
   <b>Automotive</b>, <b>Medical</b>, <b>Industrial</b>, and <b>Avionics</b>.
 </p>
 
