@@ -148,7 +148,7 @@ Early Access terms are limited to 10 companies and close at the end of October 2
 | **July 2026** | Early Access opens. |
 | **August 2026** | Source code preview: priority access ahead of GA. |
 | **October 2026** | Early Access closes: last date to reserve a slot. |
-| **December 2026 – January 2027** | Full delivery: docs, artifacts, evidence. Start building. |
+| **December 2026** | Full delivery: docs, artifacts, evidence. Start building. |
 
 ## Get in Touch
 
