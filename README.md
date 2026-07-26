@@ -23,7 +23,7 @@
 <br/>
 
 <div align="center">
-  <img src="assets/safe.png" height="500" alt="An ECG monitor UI built with LVGL Safe">
+  <img src="assets/safe.png" height="400" alt="An ECG monitor UI built with LVGL Safe">
 </div>
 
 <br/>
