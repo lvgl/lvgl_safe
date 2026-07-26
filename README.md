@@ -2,7 +2,7 @@
   <a href="https://lvgl.io/safe" title="LVGL Safe homepage">Website</a> |
   <a href="https://github.com/lvgl/lvgl" title="The open-source LVGL library">LVGL</a> |
   <a href="https://github.com/lvgl/lvgl_pro" title="The professional toolkit">LVGL Pro</a> |
-  <a href="mailto:lvgl@lvgl.io" title="Talk to us about LVGL Safe">Contact</a>
+  <a href="https://lvgl.io#contact" title="Talk to us about your needs in functional-safety">Contact</a>
 </p>
 
 <br>
