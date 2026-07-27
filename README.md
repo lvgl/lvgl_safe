@@ -129,19 +129,6 @@ predictable, allocation-free, reviewable code matters more than breadth of featu
 | **Delivery manifest** | An itemized list of everything in the delivery, with checksums and signatures confirming the artifacts received are exactly what LVGL shipped. |
 | **Support & warranty** | The support scope, response expectations, and warranty conditions that apply to LVGL Safe. |
 
-## Licensing
-
-| | |
-|---|---|
-| **Covers** | LVGL Safe Runtime and the full documentation package, per product. |
-| **Tooling** | LVGL Pro GUI Editor, LVGL Safe-compatible (separate line item). |
-| **Royalties** | Standard LVGL Safe licenses carry a per-unit royalty, confirmed in your Order Form. Waived entirely for the first 10 Early Access customers. |
-| **Support** | Optional Professional Support: 100 hours per year. |
-| **Training** | Optional best-practice onboarding session. |
-
-Early Access terms are limited to 10 companies and close at the end of October 2026.
-[Contact us](mailto:lvgl@lvgl.io) for the terms that apply to your product.
-
 ## Timeline
 
 | When | What happens |
