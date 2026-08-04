@@ -501,13 +501,6 @@ static int create_screen_1_widgets(void)
     if(create_tag_on(&screen_1, &gauge_switch_note, 450, 388, LS_LABEL_ALIGN_LEFT,
                      "CHECKED SWAPS THE SOURCE IMAGE")) return 1;
 
-    /* ------------------------------- SCREEN ------------------------------- */
-
-    /*Nothing is created here, because the background is not a widget: it is the
-     screen's own `bg_color`, set in `main` and filled in before any widget
-     is drawn on top. The tag below only points it out.*/
-    if(create_tag_on(&screen_1, &screen_tag, 20, 450, LS_LABEL_ALIGN_LEFT, "LS_SCREEN BACKGROUND")) return 1;
-
     /* ----------------------------- NAVIGATION ----------------------------- */
 
     /*The only way off this screen. Clicking it points the display at
@@ -525,6 +518,12 @@ static int create_screen_1_widgets(void)
 static int create_screen_2_widgets(void)
 {
     ls_error_code_t err;
+    /* ------------------------------- SCREEN ------------------------------- */
+
+    /*Nothing is created here, because the background is not a widget: it is the
+     screen's own `bg_color`, set in `main` and filled in before any widget
+     is drawn on top. The tag below only points it out.*/
+    if(create_tag_on(&screen_2, &screen_tag, WIN_HOR_RES - 20, WIN_VER_RES - 30 , LS_LABEL_ALIGN_RIGHT, "LS_SCREEN BACKGROUND")) return 1;
 
     /* ------------------------------- HEADER ------------------------------- */
 
