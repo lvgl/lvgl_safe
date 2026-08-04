@@ -35,6 +35,7 @@
   <a href="#whats-in-the-delivery" title="Everything you receive">Delivery</a> •
   <a href="#licensing" title="How LVGL Safe is licensed">Licensing</a> •
   <a href="#timeline" title="What happens when">Timeline</a> •
+  <a href="#getting-started" title="How to start">Getting Started</a> •
   <a href="#get-in-touch" title="Talk to us">Get in Touch</a>
 </p>
 
@@ -137,6 +138,10 @@ predictable, allocation-free, reviewable code matters more than breadth of featu
 | **August 2026** | Source code preview: priority access ahead of GA. |
 | **October 2026** | Early Access closes: last date to reserve a slot. |
 | **December 2026** | Full delivery: docs, artifacts, evidence. Start building. |
+
+## Getting Started
+
+To get familiar with the library preview and see what it can do - see [examples](/examples/) and the [Examples Guide](/examples/EXAMPLES_GUIDE.md) 
 
 ## Get in Touch
 
