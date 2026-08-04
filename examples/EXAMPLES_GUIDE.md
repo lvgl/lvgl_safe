@@ -8,10 +8,10 @@ before any target hardware is involved.
 
 | | |
 |---|---|
-| **CMake** | 3.24 or newer (`FetchContent`'s `DOWNLOAD_EXTRACT_TIMESTAMP` is used) |
+| **CMake** | 3.16 or newer |
 | **A C99 compiler (or newer)** | GCC or Clang |
 | **SDL2 development files** | the simulator backend the examples draw into |
-| **The package archive** | `lvgl_safe-<version>-<platform>.tar.gz` in the repository root |
+| **The LVGL Safe package** | already unpacked in the repository root ([../include/](../include/) and [../lib/](../lib/)) |
 
 Installing the needed tools and dependencies:
 
@@ -39,18 +39,21 @@ That configures both examples and produces two binaries:
 ./build/examples/lvgl_safe_api_tour/lvgl_safe_api_tour
 ```
 
-The top-level [CMakeLists.txt](../CMakeLists.txt) picks up the newest
-`lvgl_safe-*.tar.gz` it finds in the repository root, unpacks it, and imports the library
-through the CMake config package inside it. To use an archive from somewhere else:
+The package is already unpacked here, so nothing is downloaded or extracted at configure
+time. The top-level [CMakeLists.txt](../CMakeLists.txt) finds the unpacked package in the
+repository root and imports the library through the CMake config package it ships
+(`lib/cmake/lvgl_safe/`). An unpacked `lvgl_safe-x.y.z-<platform>/` subdirectory is picked
+up as well. To use a copy kept somewhere else, point at the directory that contains
+`include/` and `lib/`:
 
 ```bash
-cmake -S . -B build -DLS_PACKAGE_ARCHIVE=/path/to/lvgl_safe-0.2.0-linux-x86_64.tar.gz
+cmake -S . -B build -DLS_PACKAGE_PREFIX=/path/to/lvgl_safe-0.1.0-linux-x86_64
 ```
 
 A successful configure prints the version and location it resolved:
 
 ```
--- Found LVGL Safe 0.2.0 in .../build/_deps/lvgl_safe_pkg-src
+-- Found LVGL Safe 0.1.0 in /path/to/lvgl_safe
 -- SDL2 target for examples: SDL2::SDL2
 ```
 
@@ -62,7 +65,7 @@ add_executable(my_app main.c fonts/my_font.c images/my_image.c)
 target_link_libraries(my_app PRIVATE lvgl_safe::lvgl_safe ${LS_SDL2_LIBRARY})
 ```
 
-> **Note on `ls_conf.h`:** the `include/ls_conf.h` inside the package archive is
+> **Note on `ls_conf.h`:** the shipped [../include/ls_conf.h](../include/ls_conf.h) is
 > authoritative. Its values are already baked into the struct layouts in
 > `liblvgl_safe.a`, so it must not be edited — every feature of the preview library is
 > enabled as shipped.
@@ -77,7 +80,7 @@ A deck of eleven screens, one topic per screen, at 1024x600. Click the arrows in
 footer to scroll through it. The deck wraps around in both directions. The UP/DOWN keys 
 can be used to move the keyboard focus - on the screens that have focusable buttons.
 
-It covers every widget type in v0.2.0 - rectangle, label, arc, button, image button,
+It covers every widget type in v0.1.0 - rectangle, label, arc, button, image button,
 image - and all four extension points: the input event callback, custom hit testing, a
 per-widget render hook, and a whole-screen render hook. Nothing is hidden behind a
 helper function, so each screen doubles as reference code for the topic it names.
@@ -186,8 +189,8 @@ Both examples use `c_output`; start there unless you specifically need run-time 
 
 | Symptom | Cause |
 |---|---|
-| `No lvgl_safe-*.tar.gz found in ...` | the package archive is not in the repository root — pass `-DLS_PACKAGE_ARCHIVE=<path>` |
-| `Multiple package archives found` | more than one `lvgl_safe-*.tar.gz` is present; the newest is used, pass `-DLS_PACKAGE_ARCHIVE=<path>` to pick |
+| `No unpacked LVGL Safe package found in ...` | `include/` and `lib/` are missing from the repository root — extract the package there, or pass `-DLS_PACKAGE_PREFIX=<path>` |
+| `... does not look like an unpacked LVGL Safe package` | the path given to `-DLS_PACKAGE_PREFIX` is not the directory holding `include/` and `lib/` (`lib/cmake/lvgl_safe/lvgl_safeConfig.cmake` was not found there) |
 | SDL2 not found at configure time | install the SDL2 **development** package, not just the runtime |
 | A widget draws nothing | check the return code of its `*_create` call, and whether `common.hidden` is set |
 | An image button errors at render | the source for the state it is in is `NULL`; every state a widget can reach needs a source |
