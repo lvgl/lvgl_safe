@@ -77,13 +77,22 @@ We suggest you to try out the examples in the following order.
 ### `lvgl_safe_api_tour` - what the library can do
 
 A deck of eleven screens, one topic per screen, at 1024x600. Click the arrows in the
-footer to scroll through it. The deck wraps around in both directions. The UP/DOWN keys 
-can be used to move the keyboard focus - on the screens that have focusable buttons.
+footer to scroll through it. The deck wraps around in both directions. The UP/DOWN keys
+move the keyboard focus; most screens have only the footer's language button to focus, but
+the `ls_button` and event-callback screens have several.
 
 It covers every widget type in v0.1.0 - rectangle, label, arc, button, image button,
 image - and all four extension points: the input event callback, custom hit testing, a
 per-widget render hook, and a whole-screen render hook. Nothing is hidden behind a
 helper function, so each screen doubles as reference code for the topic it names.
+
+The whole deck is translated. The button in the footer cycles English, German and French,
+and every string on screen follows it, because the labels are bound to an `ls_translation_t`
+rather than to a literal. The text itself lives in
+[lvgl_safe_api_tour/translations.c](lvgl_safe_api_tour/translations.c) - one row per string,
+three languages per row - so `main.c` holds the layout and the logic and none of the
+wording. The only strings it builds itself are the ones that are not language at all, like
+the `01 / 11` slide counter.
 
 Start here to see the capabilities. → [lvgl_safe_api_tour/main.c](lvgl_safe_api_tour/main.c)
 
