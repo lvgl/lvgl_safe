@@ -1,0 +1,82 @@
+name: Build Docs 
+
+on:
+  workflow_dispatch: # allow manual triggering
+    inputs:
+      deploy:
+        description: 'Deploy after build'
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'examples/**'
+      - '.github/workflows/compile_docs.yml'
+  push:
+    branches:
+      - master
+      - 'release/*'
+    paths:
+      - 'docs/**'
+      - 'examples/**'
+      - '.github/workflows/compile_docs.yml'
+
+# https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#concurrency
+# Ensure that only one commit will be running tests at a time on each PR
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  EM_VERSION: 4.0.23
+  EM_CACHE_FOLDER: 'emsdk-cache'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Node        
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install mdx linter
+        run: npm i @lvgl/mdx-lint
+
+      - name: Run mdx linter
+        run: |
+          npx @lvgl/mdx-lint "docs/**/*.{md,mdx}" \
+          --fail-on-warning \
+          --reporter github
+     
+      - name: Deploy Latest
+        if: >
+          github.ref == 'refs/heads/master' &&
+          (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true'))
+        run: |
+          git clone https://lvgl-bot:${{ secrets.LVGL_BOT_TOKEN }}@github.com/lvgl/safe-docs.git /tmp/safe-docs-latest
+
+          rm -rf /tmp/safe-docs-latest/latest
+
+          mkdir -p /tmp/safe-docs-latest/latest/src
+
+          cp -r docs/. /tmp/safe-docs-latest/latest/src
+       
+
+          rm -rf /tmp/safe-docs-latest/latest/src/scripts
+
+          cd /tmp/safe-docs-latest
+          git config user.name lvgl-bot
+          git config user.email lvgl-bot@users.noreply.github.com
+          git add .
+          git diff --cached --quiet || git commit -m "Deploy latest from commit ${{ github.sha }}"
+          git push
