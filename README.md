@@ -138,7 +138,15 @@ predictable, allocation-free, reviewable code matters more than breadth of featu
 
 ## Getting Started
 
-To get familiar with the library preview and see what it can do - see [examples](/examples/) and the [Examples Guide](/examples/EXAMPLES_GUIDE.md) 
+The quickest way to see what the preview can do is to build the two example apps in
+[examples/](/examples/) — they run on your desktop in an SDL2 window, so no target
+hardware is needed. Three guides cover the basics of using the LVGL Safe preview:
+
+| Document | Read it for |
+|---|---|
+| [Examples Guide](/docs/examples-guide.mdx) | Building and running the two example apps, and converting your own images and fonts |
+| [General Guide](/docs/general-guide.mdx) | What the library is and how displays, screens and widgets fit together — the concepts behind the API |
+| [API reference](/docs/api-reference.mdx) | The field-by-field reference for every type and widget, with a copy-pasteable snippet for each |
 
 ## Get in Touch
 

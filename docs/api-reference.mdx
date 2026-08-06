@@ -1,0 +1,478 @@
+---
+title: API Reference
+description: API reference for the LVGL Safe Library and the usage of widgets
+---
+
+# API Reference
+
+The field-by-field reference for LVGL Safe v0.1.0. For the concepts behind it — the
+widget lifecycle, error handling, colors, input, rendering — start with the
+[General Guide](general-guide.mdx), to build and run an application, see the
+[Examples Guide](examples-guide.mdx).
+
+Three rules hold for every widget in this document:
+
+1. `ls_widget_common_t` is always the **first** member, named `common`.
+2. You configure a widget by **assigning its fields directly**, after
+   `ls_<widget>_create()`. There are no setters or getters, and `create` overwrites
+   the struct, so it must come first.
+3. `create` leaves the widget in a **visible** state — opaque, with a placeholder
+   color — so in practice you only have to set geometry and content. The two
+   exceptions are listed under [Defaults after `create`](#defaults-after-create).
+
+Every function listed here returns an
+[`ls_error_code_t`](../include/ls_error_codes.h) — check it at the call site.
+
+### Defaults after `create`
+
+All sizes and positions start at 0, and `focus_index` at `UINT32_MAX` (never
+focused). Beyond that:
+
+| Widget | Defaults |
+|---|---|
+| `ls_rectangle_t` | `#cccccc` fill, opaque; black border of width 0 (no border) |
+| `ls_label_t` | black text, opaque, left-aligned, `letter_space` 1, **no font** |
+| `ls_button_t` | `#666666` and opaque in all five *unchecked* states; the five *checked* states are **fully transparent** |
+| `ls_image_t` | opaque, no rotation, black `a8_color`, **`src` is NULL** |
+| `ls_image_button_t` | **all ten sources are NULL** |
+| `ls_arc_t` | blue, opaque, center 30,30, radius 30, thickness 5, sweeping 30°→90° |
+
+The NULL ones are not silent: a label without a `font`, an image without a `src`, or
+an image button whose current state has no source makes `ls_render()` return
+`LS_ERROR_CODE_INVALID_CONFIGURATION` for the whole frame. A widget that draws
+nothing *without* an error is one that is `hidden`, still sized 0, or a
+`checked` button state that was never given a color and opacity.
+
+---
+
+## Common base type — `ls_widget_common_t`
+
+[`ls_widget.h`](../include/ls_widget.h)
+
+| Field                  | Type                        | Description                                        |
+|------------------------|-----------------------------|----------------------------------------------------|
+| `type`                 | `const char *`              | Widget type string, e.g. `"ls_button"`             |
+| `widget_next`          | `void *`                    | Next widget on the screen — owned by the library   |
+| `render_cb`            | `ls_render_cb_t`            | Render callback; set by `*_create`, overwrite it to draw the widget yourself |
+| `indev_event_cb`       | `ls_indev_event_cb_t`       | Input event callback (if `LS_USE_INDEV`)           |
+| `indev_click_test_cb`  | `ls_indev_click_test_cb_t`  | Hit-test callback; defaults to the bounding box (if `LS_USE_INDEV`) |
+| `hidden`               | `bool`                      | If true, the widget is not rendered and ignores input |
+| `pressed`              | `bool`                      | True while the widget is being pressed — read, don't write |
+
+## Display — `ls_display_t`
+
+[`ls_display.h`](../include/ls_display.h)
+
+```c
+ls_error_code_t ls_display_init(ls_display_t * display);
+```
+
+`init` sets no geometry — fill these in yourself afterwards:
+
+| Field           | Type                        | Description                                     |
+|-----------------|-----------------------------|-------------------------------------------------|
+| `hor_res`       | `uint32_t`                  | Width in pixels                                 |
+| `ver_res`       | `int32_t`                   | Height in pixels                                |
+| `stride`        | `int32_t`                   | Bytes per line, i.e. `hor_res * LS_BYTE_PER_PIXEL` |
+| `frame_buffer`  | `ls_frame_buffer_color_t *` | The RGB565 buffer you own and the renderer writes into |
+| `screen_active` | `ls_screen_t *`             | The one screen that gets rendered               |
+
+Switching screens is a single assignment to `screen_active`.
+
+```c
+static ls_frame_buffer_color_t fb[320 * 240];   /*the buffer is yours, not the library's*/
+static ls_display_t display;
+
+if(ls_display_init(&display) != LS_ERROR_CODE_OK) return 1;
+display.hor_res = 320;
+display.ver_res = 240;
+display.stride = 320 * LS_BYTE_PER_PIXEL;
+display.frame_buffer = fb;
+display.screen_active = &screen;
+
+/*In your main loop: */
+if(ls_render(&display) != LS_ERROR_CODE_OK) return 1;
+flush_to_panel(fb);                             /*your own display driver*/
+```
+
+## Screen — `ls_screen_t`
+
+[`ls_screen.h`](../include/ls_screen.h)
+
+```c
+ls_error_code_t ls_screen_init(ls_screen_t * screen);
+```
+
+| Field                | Type             | Description                                             |
+|----------------------|------------------|---------------------------------------------------------|
+| `bg_color`           | `ls_color_t`     | Background color; defaults to white                     |
+| `active_focus_index` | `uint32_t`       | The `focus_index` that currently counts as focused      |
+| `render_cb`          | `ls_render_cb_t` | Screen render hook; `init` installs the default flat `bg_color` fill, and overwriting it replaces that fill |
+
+`widget_head`, `widget_tail` and `screen_next` are the library's bookkeeping — don't
+change them.
+
+```c
+static ls_screen_t screen;
+
+if(ls_screen_init(&screen) != LS_ERROR_CODE_OK) return 1;
+screen.bg_color = LS_COLOR_HEX(0x14181d);
+
+/*Widgets are created onto a screen, and a screen is shown by pointing a display at it.*/
+display.screen_active = &screen;
+```
+
+## Rectangle — `ls_rectangle_t`
+
+[`ls_rectangle.h`](../include/ls_rectangle.h)
+
+```c
+ls_error_code_t ls_rectangle_create(ls_screen_t * screen, ls_rectangle_t * rectangle);
+```
+
+| Field             | Type         | Description              |
+|-------------------|--------------|--------------------------|
+| `x`, `y`          | `uint32_t`   | Top-left position        |
+| `width`, `height` | `uint32_t`   | Size in pixels           |
+| `bg_color`        | `ls_color_t` | Fill color               |
+| `bg_opa`          | `uint8_t`    | Fill opacity (0..255)    |
+| `border_color`    | `ls_color_t` | Border color             |
+| `border_width`    | `uint32_t`   | Border thickness in px; 0 (the default) means no border |
+
+
+```c
+static ls_rectangle_t panel;
+
+if(ls_rectangle_create(&screen, &panel) != LS_ERROR_CODE_OK) return 1;
+panel.x = 20;
+panel.y = 20;
+panel.width = 280;
+panel.height = 90;
+panel.bg_color = LS_COLOR_HEX(0x1e242b);
+
+/*A 1 px separator line, which is just a very thin rectangle.*/
+static ls_rectangle_t line;
+
+if(ls_rectangle_create(&screen, &line) != LS_ERROR_CODE_OK) return 1;
+line.x = 20;
+line.y = 120;
+line.width = 280;
+line.height = 1;
+line.bg_color = LS_COLOR_HEX(0x2b333c);
+```
+
+> **NOTE:** border rendering is not yet implemented.
+
+## Label — `ls_label_t`
+
+[`ls_label.h`](../include/ls_label.h)
+
+```c
+ls_error_code_t ls_label_create(ls_screen_t * screen, ls_label_t * label);
+ls_error_code_t ls_label_get_text_size(void * widget, uint32_t * width, uint32_t * height);
+```
+
+| Field                 | Type                        | Description                                   |
+|-----------------------|-----------------------------|-----------------------------------------------|
+| `x`, `y`              | `uint32_t`                  | Top-left position                             |
+| `width`, `height`     | `uint32_t`                  | Bounding box; `width` is what `align` centers within |
+| `text`                | `const char *`              | Static text (use `\n` for line breaks)        |
+| `translation`         | `const ls_translation_t *`  | Translated text — an alternative to `text`    |
+| `bind_int`            | `int32_t *`                 | Display the integer this points at            |
+| `bind_fmt`            | `const char *`              | Format string for `bind_int`, e.g. `"%d"`     |
+| `color`               | `ls_color_t`                | Text color                                    |
+| `font`                | `ls_font_t *`               | Font to use                                   |
+| `align`               | `lv_label_align_t`          | `LS_LABEL_ALIGN_LEFT` / `_CENTER` / `_RIGHT`  |
+| `opa`                 | `uint8_t`                   | Opacity (0..255)                              |
+| `letter_space`        | `uint32_t`                  | Extra spacing between characters; defaults to 1 |
+| `underline_thickness` | `uint32_t`                  | Underline thickness (0 = none)                |
+
+Set exactly one text source. `text` is a literal, `translation` follows the current
+language, and `bind_int` + `bind_fmt` renders a live application variable — the label
+re-reads the pointed-to value on every render, so you never rewrite the string
+yourself.
+
+`ls_label_get_text_size()` measures the text as it would be drawn, which is how you
+size or center a panel around a string whose length you don't know up front.
+
+```c
+extern ls_font_t montserrat_18;   /*a generated font — see the Examples Guide*/
+
+static ls_label_t title;
+
+if(ls_label_create(&screen, &title) != LS_ERROR_CODE_OK) return 1;
+title.x = 20;
+title.y = 30;
+title.font = &montserrat_18;      /*without a font, ls_render() fails*/
+title.color = LS_COLOR_HEX(0xe6ebef);
+title.text = "Hello LVGL Safe";
+
+/*A live readout: no string is ever rewritten, the label re-reads `level` every frame.*/
+static int32_t level = 40;
+static ls_label_t readout;
+
+if(ls_label_create(&screen, &readout) != LS_ERROR_CODE_OK) return 1;
+readout.x = 160;
+readout.y = 70;
+readout.width = 0;                /*align centers within `width`, so 0 centers on `x`*/
+readout.align = LS_LABEL_ALIGN_CENTER;
+readout.font = &montserrat_18;
+readout.color = LS_COLOR_HEX(0x3d8bfd);
+readout.bind_int = &level;
+readout.bind_fmt = "%d %%";
+```
+
+## Button — `ls_button_t`
+
+[`ls_button.h`](../include/ls_button.h)
+
+```c
+ls_error_code_t ls_button_create(ls_screen_t * screen, ls_button_t * button);
+```
+
+A button is drawn as a filled rectangle whose background color and opacity are chosen
+by its current **state**. The state is the combination of:
+
+- **pressed / released** — driven by input,
+- **focused / unfocused** — whether `focus_index == screen.active_focus_index`,
+- **checked / unchecked** — the `checked` field, which you set,
+- **disabled / enabled** — the `disabled` field; a disabled button ignores input.
+
+Each reachable combination has its own field rather than an array:
+
+| Geometry          | Color field                           | Opacity field                     |
+|-------------------|---------------------------------------|-----------------------------------|
+| `x`, `y`,         | `bg_color_normal`                     | `bg_opa_normal`                   |
+| `width`, `height` | `bg_color_pressed`                    | `bg_opa_pressed`                  |
+| (all `uint32_t`)  | `bg_color_focused`                    | `bg_opa_focused`                  |
+|                   | `bg_color_pressed_focused`            | `bg_opa_pressed_focused`          |
+|                   | `bg_color_disabled`                   | `bg_opa_disabled`                 |
+|                   | `bg_color_checked`                    | `bg_opa_checked`                  |
+|                   | `bg_color_checked_pressed`            | `bg_opa_checked_pressed`          |
+|                   | `bg_color_checked_focused`            | `bg_opa_checked_focused`          |
+|                   | `bg_color_checked_pressed_focused`    | `bg_opa_checked_pressed_focused`  |
+|                   | `bg_color_checked_disabled`           | `bg_opa_checked_disabled`         |
+
+Colors are `ls_color_t`, opacities `uint8_t`. Watch the asymmetry in the defaults: the
+five unchecked states come up opaque grey, but the five checked ones come up
+**transparent**. If you use `checked`, give those five states a color *and* an
+opacity, or the button vanishes when it is toggled on.
+
+Other fields: `focus_index` (`uint32_t`), `checked` (`bool`), `disabled` (`bool`).
+
+A button carries no label of its own — create an `ls_label_t` over it for the caption.
+
+```c
+static void button_cb(void * widget, ls_indev_event_type_t type)
+{
+    (void) widget;
+    if(type == LS_INDEV_EVENT_TYPE_CLICKED) level += 10;
+}
+
+static ls_button_t button;
+
+if(ls_button_create(&screen, &button) != LS_ERROR_CODE_OK) return 1;
+button.x = 20;
+button.y = 150;
+button.width = 140;
+button.height = 48;
+button.bg_color_normal = LS_COLOR_HEX(0x2a323b);
+button.bg_color_pressed = LS_COLOR_HEX(0x3d8bfd);
+button.common.indev_event_cb = button_cb;
+
+/*The caption is a separate label, created after the button so it is drawn on top.*/
+static ls_label_t caption;
+
+if(ls_label_create(&screen, &caption) != LS_ERROR_CODE_OK) return 1;
+caption.x = 90;                   /*the button's horizontal center*/
+caption.y = 164;
+caption.align = LS_LABEL_ALIGN_CENTER;
+caption.font = &montserrat_18;
+caption.color = LS_COLOR_HEX(0xe6ebef);
+caption.text = "STEP +10";
+```
+
+## Image — `ls_image_t`
+
+[`ls_image.h`](../include/ls_image.h)
+
+```c
+ls_error_code_t ls_image_create(ls_screen_t * screen, ls_image_t * image);
+```
+
+Pixel data is described by an `ls_image_dsc_t`, which is what the image converter
+generates for you (see [Section 4 of the Examples Guide](examples-guide.mdx#4-using-your-own-images-and-fonts)):
+
+```c
+typedef struct {
+    ls_frame_buffer_color_t color_format;  /* one of ls_image_color_format_t */
+    int32_t width;
+    int32_t height;
+    int32_t stride;                        /* bytes per row */
+    const void * data;                     /* pixel data */
+} ls_image_dsc_t;
+```
+
+Supported formats (`ls_image_color_format_t`):
+
+| Format                          | Use it for                                        |
+|---------------------------------|---------------------------------------------------|
+| `LS_IMAGE_COLOR_FORMAT_RGB565`  | Opaque 16-bit images — cheapest to blit           |
+| `LS_IMAGE_COLOR_FORMAT_ARGB8888`| Full color with per-pixel alpha                   |
+| `LS_IMAGE_COLOR_FORMAT_A8`      | An alpha-only mask tinted with the widget's `a8_color` — one asset, any color |
+
+| Field                | Type                     | Description                                   |
+|----------------------|--------------------------|-----------------------------------------------|
+| `x`, `y`             | `uint32_t`               | Top-left position                             |
+| `src`                | `const ls_image_dsc_t *` | Image source descriptor                       |
+| `opa`                | `uint8_t`                | Opacity (0..255)                              |
+| `a8_color`           | `ls_color_t`             | Tint color, used only for A8 sources          |
+| `pivot_x`, `pivot_y` | `int32_t`                | Rotation pivot, relative to the image's top-left |
+| `rotation`           | `int32_t`                | Rotation angle in degrees                     |
+
+There is no `width`/`height`: the size comes from `src`.
+
+```c
+extern const ls_image_dsc_t my_logo;   /*generated by the image converter*/
+
+static ls_image_t logo;
+
+if(ls_image_create(&screen, &logo) != LS_ERROR_CODE_OK) return 1;
+logo.x = 20;
+logo.y = 20;
+logo.src = &my_logo;                   /*without a src, ls_render() fails*/
+
+/*An A8 source is a mask: one asset, tinted to whatever color you want.*/
+extern const ls_image_dsc_t my_icon_a8;
+
+static ls_image_t needle;
+
+if(ls_image_create(&screen, &needle) != LS_ERROR_CODE_OK) return 1;
+needle.x = 200;
+needle.y = 20;
+needle.src = &my_icon_a8;
+needle.a8_color = LS_COLOR_HEX(0x3d8bfd);
+needle.pivot_x = 16;                   /*relative to the image's top-left*/
+needle.pivot_y = 16;
+needle.rotation = 45;
+```
+
+## Image button — `ls_image_button_t`
+
+[`ls_image_button.h`](../include/ls_image_button.h)
+
+```c
+ls_error_code_t ls_image_button_create(ls_screen_t * screen, ls_image_button_t * image_button);
+```
+
+Same state machine as `ls_button_t` (pressed/released, focused/unfocused,
+checked/unchecked, disabled/enabled), but each state shows a different **image**
+instead of a background color:
+
+| Geometry                     | Image source field (all `const ls_image_dsc_t *`) |
+|------------------------------|---------------------------------------------------|
+| `x`, `y` (both `uint32_t`)   | `src_normal`                                      |
+|                              | `src_pressed`                                     |
+|                              | `src_focused`                                     |
+|                              | `src_pressed_focused`                             |
+|                              | `src_disabled`                                    |
+|                              | `src_checked`                                     |
+|                              | `src_checked_pressed`                             |
+|                              | `src_checked_focused`                             |
+|                              | `src_checked_pressed_focused`                     |
+|                              | `src_checked_disabled`                            |
+
+Other fields: `focus_index` (`uint32_t`), `checked` (`bool`), `disabled` (`bool`).
+
+There is no `width`/`height` — the size comes from the descriptor of the active
+state. Unlike the color fields on `ls_button_t`, these have no usable default:
+**every state the widget can reach needs a non-NULL source** (if those states are used), 
+or rendering fails when it lands there. Pointing several states at the same descriptor is normal — a
+two-image switch typically assigns one image to the unchecked states and one to the
+checked ones. 
+
+```c
+extern const ls_image_dsc_t switch_off;
+extern const ls_image_dsc_t switch_on;
+
+/*`checked` is a plain bool you own — the widget does not latch itself, flipping it
+ here is what makes this a toggle.*/
+static void switch_cb(void * widget, ls_indev_event_type_t type)
+{
+    ls_image_button_t * button = widget;
+    if(button == NULL) return;
+    if(type == LS_INDEV_EVENT_TYPE_CLICKED) button->checked = !button->checked;
+}
+
+static ls_image_button_t toggle;
+
+if(ls_image_button_create(&screen, &toggle) != LS_ERROR_CODE_OK) return 1;
+toggle.x = 200;
+toggle.y = 150;
+
+/*This switch is never focused or disabled, so only the four reachable states
+ need a source.*/
+toggle.src_normal = &switch_off;
+toggle.src_pressed = &switch_off;
+toggle.src_checked = &switch_on;
+toggle.src_checked_pressed = &switch_on;
+toggle.common.indev_event_cb = switch_cb;
+```
+
+## Arc — `ls_arc_t`
+
+[`ls_arc.h`](../include/ls_arc.h)
+
+```c
+ls_error_code_t ls_arc_create(ls_screen_t * screen, ls_arc_t * arc);
+```
+
+| Field                  | Type         | Description                              |
+|------------------------|--------------|------------------------------------------|
+| `center_x`, `center_y` | `int32_t`    | Arc center                               |
+| `radius`               | `uint32_t`   | Radius in pixels (default 30)            |
+| `thickness`            | `uint32_t`   | Line thickness in pixels (default 5)     |
+| `start_deg`, `end_deg` | `uint32_t`   | Start/end angle in degrees (default 30 and 90) |
+| `color`                | `ls_color_t` | Arc color                                |
+| `opa`                  | `uint8_t`    | Opacity (0..255)                         |
+
+0° points right and angles grow clockwise.
+
+```c
+/*A gauge is two arcs: a full-sweep track, and a colored one on top of it whose
+ `end_deg` you recompute when the value changes.*/
+static ls_arc_t track;
+static ls_arc_t fill;
+
+if(ls_arc_create(&screen, &track) != LS_ERROR_CODE_OK) return 1;
+track.center_x = 160;
+track.center_y = 120;
+track.radius = 50;
+track.thickness = 10;
+track.start_deg = 135;              /*opens downward*/
+track.end_deg = 135 + 270;
+track.color = LS_COLOR_HEX(0x2b333c);
+
+if(ls_arc_create(&screen, &fill) != LS_ERROR_CODE_OK) return 1;
+fill.center_x = 160;
+fill.center_y = 120;
+fill.radius = 50;
+fill.thickness = 10;
+fill.start_deg = 135;
+fill.end_deg = 135 + (270 * (uint32_t) level) / 100;   /*update this as `level` moves*/
+fill.color = LS_COLOR_HEX(0x3d8bfd);
+```
+
+---
+
+## Not a widget, but part of the API
+
+| Header | What it gives you |
+|---|---|
+| [`ls_color.h`](../include/ls_color.h) | `ls_color_t`, `LS_COLOR_MAKE`, `LS_COLOR_HEX`, `ls_color_to_u16()`, `LS_BYTE_PER_PIXEL` |
+| [`ls_render.h`](../include/ls_render.h) | `ls_render()`, `ls_render_clear_frame_buffer()`, `ls_render_goto_frame_buffer_px()`, `LS_OPA_COVER` |
+| [`ls_input.h`](../include/ls_input.h) | `ls_indev_process()`, input states, event types, callback typedefs |
+| [`ls_font.h`](../include/ls_font.h) | `ls_font_t` — a generated glyph-bitmap font descriptor |
+| [`ls_translation.h`](../include/ls_translation.h) | `ls_translation_init()`, `ls_translation_set_language()`, `ls_translation_get()` |
+| [`ls_math.h`](../include/ls_math.h) | `ls_sin()`, `ls_cos()` — integer trig, so no libm dependency |
+| [`ls_conf.h`](../include/ls_conf.h) | Compile-time feature switches. **Do not edit in the preview** — its values are already baked into the shipped library |
