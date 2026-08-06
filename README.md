@@ -39,9 +39,6 @@
   <a href="#get-in-touch" title="Talk to us">Get in Touch</a>
 </p>
 
-> [!IMPORTANT]
-> A testable library with a user-guide is coming soon.
-
 ## Overview
 
 - **Built for safety-critical systems**: written from the ground up with safety as the north star.
