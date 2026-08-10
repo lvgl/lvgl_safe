@@ -2,7 +2,7 @@
   <a href="https://lvgl.io/safe" title="LVGL Safe homepage">Website</a> |
   <a href="https://github.com/lvgl/lvgl" title="The open-source LVGL library">LVGL Open</a> |
   <a href="https://github.com/lvgl/lvgl_pro" title="The professional toolkit">LVGL Pro</a> |
-  <a href="https://lvgl.io#contact" title="Talk to us about your needs in functional-safety">Contact</a>
+  <a href="https://lvgl.io/safe#contact" title="Talk to us about your needs in functional-safety">Contact</a>
 </p>
 
 <br>
@@ -33,7 +33,6 @@
   <a href="#lvgl-safe-vs-lvgl-open" title="How it relates to open-source LVGL">LVGL Safe vs LVGL Open</a> •
   <a href="#standards" title="Supported standards and levels">Standards</a> •
   <a href="#whats-in-the-delivery" title="Everything you receive">Delivery</a> •
-  <a href="#licensing" title="How LVGL Safe is licensed">Licensing</a> •
   <a href="#timeline" title="What happens when">Timeline</a> •
   <a href="#getting-started" title="How to start">Getting Started</a> •
   <a href="#get-in-touch" title="Talk to us">Get in Touch</a>
@@ -68,10 +67,9 @@ LVGL Safe optimizes for predictability, auditability, and evidence.
 | Aspect | LVGL Open | LVGL Safe |
 |---|---|---|
 | **Goal** | Rich, general-purpose GUI | Certifiable, auditable UI for safety-critical products |
-| **Codebase** | C | C |
 | **Source & licensing** | Free and public under MIT | Source available under a commercial agreement, per product |
 | **Feature set** | Broad: 30+ widgets, everything a modern UI needs | Deliberately smaller: every feature must be justifiable and verifiable |
-| **Reliability** | Community-tested, production-proven | Highest priority: MISRA C:2012, deterministic behavior, ~95% test coverage, full traceability |
+| **Reliability** | Community-tested, production-proven | Highest priority: MISRA C:2012, deterministic behavior, 100% test coverage, full traceability |
 | **Memory** | Dynamic allocation at runtime | No runtime allocation; the caller owns every struct and buffer |
 | **Object lifecycle** | Widgets created and deleted freely | Create only: widgets live for the lifetime of the program |
 | **Global state** | Global/default display and registries | No internal global or static state |
@@ -139,13 +137,13 @@ predictable, allocation-free, reviewable code matters more than breadth of featu
 ## Getting Started
 
 The quickest way to see what the preview can do is to build the two example apps in
-[examples/](/examples/) — they run on your desktop in an SDL2 window, so no target
+[examples/](/examples/). They run on your desktop in an SDL2 window, so no target
 hardware is needed. Three guides cover the basics of using the LVGL Safe preview:
 
 | Document | Read it for |
 |---|---|
 | [Examples Guide](/docs/examples-guide.mdx) | Building and running the two example apps, and converting your own images and fonts |
-| [General Guide](/docs/general-guide.mdx) | What the library is and how displays, screens and widgets fit together — the concepts behind the API |
+| [General Guide](/docs/general-guide.mdx) | What the library is and how displays, screens and widgets fit together: the concepts behind the API |
 | [API reference](/docs/api-reference.mdx) | The field-by-field reference for every type and widget, with a copy-pasteable snippet for each |
 
 ## Get in Touch
