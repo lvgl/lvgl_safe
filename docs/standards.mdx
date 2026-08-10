@@ -1,0 +1,114 @@
+---
+title: Standards
+description: The functional-safety standards and levels LVGL Safe is built to support in your product's certification, what each standard governs, and what substantiates the claim.
+---
+
+LVGL Safe is developed against the functional-safety standards of four industries. The table below
+gives the highest level the delivery is prepared to support in each one.
+
+| Industry   | Standard   | Supported up to |
+|------------|------------|-----------------|
+| Automotive | ISO 26262  | ASIL B          |
+| Medical    | IEC 62304  | Class B         |
+| Industrial | IEC 61508  | SIL 2           |
+| Avionics   | DO-178C    | DAL C           |
+
+## What "supported up to" means
+
+Functional-safety certification applies to a system in its intended context of use - hazards,
+safety goals, operational assumptions, and evidence for the implemented safety concept. A UI
+library alone usually does not, and cannot, define those system-level elements, so it cannot be
+certified as a complete functional-safety system. It can, however, provide reusable safety-related
+evidence, constraints, and qualification support for integration into such a system.
+
+LVGL Safe provides the **evidence** your certification effort needs from a software component: a
+safety manual stating the assumptions of use and the conditions under which its claims hold, a
+verification report with test results and coverage data, and a traceability summary mapping every
+requirement through design to test. "Supported up to ASIL B" means the delivered artifacts are
+prepared to the rigor that the standard demands, so they can be taken up directly as supplier
+evidence in your product's own assessment.
+
+Your integration, hazard analysis, and system-level argument remain yours. See
+[Delivery](/delivery) for the full artifact list.
+
+<Callout type="warn">
+The levels above describe the **full delivery**. The current v0.1.0 preview is
+**not yet verified, audited, or qualified**, and ships none of these artifacts. Do not present it
+as evidence in an assessment.
+</Callout>
+
+## The standards
+
+### ISO 26262 - Automotive
+
+*Road vehicles - Functional safety.* Covers the functional safety of electrical and electronic
+(E/E) systems in production road vehicles, across the whole safety lifecycle. Risk is classified
+into four **Automotive Safety Integrity Levels**, ASIL A (lowest) through ASIL D (highest), derived
+from the severity, exposure, and controllability of each hazard; the standard is itself an
+automotive adaptation of IEC 61508. Software requirements live in part 6.
+
+**LVGL Safe supports up to ASIL B.** Learn more:
+[ISO 26262 overview](https://www.iso.org/publication/PUB200262.html) ·
+[ISO 26262-1:2018 (Vocabulary)](https://www.iso.org/standard/68383.html)
+
+### IEC 62304 - Medical
+
+*Medical device software - Software life cycle processes.* Defines the life cycle requirements for
+medical device software: the processes, activities, and tasks that make up a common development
+framework. Software is assigned a **safety class** by the harm a failure could cause - Class A (no
+injury or damage to health possible), Class B (non-serious injury possible), Class C (death or
+serious injury possible) - and the required rigor scales with the class.
+
+**LVGL Safe supports up to Class B.** Learn more:
+[IEC 62304:2006+AMD1:2015](https://webstore.iec.ch/en/publication/22794)
+
+### IEC 61508 - Industrial
+
+*Functional safety of electrical/electronic/programmable electronic safety-related systems.* The
+base functional-safety standard from which most sector-specific standards are derived. It covers
+the full lifecycle of E/E/PE systems that carry out automated safety functions, and defines four
+**Safety Integrity Levels**, SIL 1 through SIL 4, indicating the degree to which a system will
+perform its safety functions. Software requirements live in part 3.
+
+**LVGL Safe supports up to SIL 2.** Learn more:
+[IEC functional safety](https://www.iec.ch/functional-safety) ·
+[IEC 61508-3:2010 (Software requirements)](https://webstore.iec.ch/en/publication/5517)
+
+### DO-178C - Avionics
+
+*Software Considerations in Airborne Systems and Equipment Certification.* The guidance airborne
+software is approved against by certification authorities such as the FAA and EASA (published by
+RTCA, with the equivalent EUROCAE document numbered ED-12C). Software is assigned a **Design
+Assurance Level** from DAL A to DAL E based on the effect of its failure on the aircraft, and the
+number and rigor of objectives grows with the level.
+
+**LVGL Safe supports up to DAL C.** Learn more:
+[RTCA DO-178 documents](https://www.rtca.org/do-178/)
+
+## MISRA C:2012
+
+Separate from the four standards above, LVGL Safe targets conformance with the **mandatory rules**
+of MISRA C:2012. MISRA C conformance evidence forms part of the delivery.
+
+Learn more: [MISRA](https://misra.org.uk/)
+
+## What substantiates the levels
+
+The claims above rest on artifacts, not assertions. Each of these is part of the delivery:
+
+| Artifact | What it substantiates |
+|---|---|
+| **Safety manual** | The assumptions of use and safety-related constraints under which the claims hold |
+| **Verification report** | That the software was tested against its requirements, with results and coverage data |
+| **Traceability summary** | That every requirement is implemented and verified, with no gaps |
+| **Datasheet** | The supported standards, configurations, resource footprint, and performance characteristics |
+| **License & notices, SBOM** | The components and licenses in the delivery, for supply-chain and legal review |
+
+See [Delivery](/delivery) for the complete list, including the delivery and support
+documentation.
+
+<Callout type="info">
+Building a safety-critical product and wondering how LVGL Safe fits into it?
+[Contact us](https://lvgl.io/safe#contact) with your target standard, certification level, and
+timeline.
+</Callout>

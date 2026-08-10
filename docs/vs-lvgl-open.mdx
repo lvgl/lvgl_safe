@@ -1,0 +1,51 @@
+---
+title: LVGL Safe vs LVGL Open
+description: LVGL Safe is not a fork of LVGL Open. It is a separate library, written from scratch in C99, that makes the opposite trade-offs.
+---
+
+**LVGL Safe is not a fork of [LVGL Open](https://github.com/lvgl/lvgl).** It is a new library,
+written from scratch in C99 with safety as the north star from the first commit. None of the
+open-source codebase was carried over, because a certifiable library has to be designed around its
+requirements (no runtime allocation, no hidden global state, deterministic rendering, full
+requirement-to-test traceability), and those properties cannot be retrofitted onto a
+general-purpose GUI engine by trimming it down.
+
+The two libraries share a name, an author, and a design philosophy, but they solve different
+problems and make opposite trade-offs. LVGL Open optimizes for features and developer velocity;
+LVGL Safe optimizes for predictability, auditability, and evidence.
+
+| Aspect | LVGL Open | LVGL Safe |
+|---|---|---|
+| **Goal** | Rich, general-purpose GUI | Auditable UI for safety-critical products |
+| **Codebase** | C | C |
+| **Source & licensing** | Free and public under MIT | Source available under a commercial agreement, per product |
+| **Feature set** | Broad: 30+ widgets, everything a modern UI needs | Deliberately smaller: every feature must be justifiable and verifiable |
+| **Reliability** | Community-tested, production-proven | Highest priority: MISRA C:2012, deterministic behavior, 100% test coverage, full traceability |
+| **Memory** | Dynamic allocation at runtime | No runtime allocation; the caller owns every struct and buffer |
+| **Object lifecycle** | Widgets created and deleted freely | Create only: widgets live for the lifetime of the program |
+| **Global state** | Global/default display and registries | No internal global or static state |
+| **Styling & layout** | Cascading styles, themes, flex and grid | Explicit per-widget fields, per-state colors, absolute positioning |
+| **Rendering** | Multiple draw units, GPU and HW acceleration | One deterministic software renderer |
+| **Dependencies** | Optional integrations (filesystems, decoders, libraries) | C99 and the standard library only |
+| **Portability** | Fully portable to any MCU/MPU and any (RT)OS | Fully portable to any MCU/MPU and any (RT)OS |
+| **Documentation** | Docs and examples | Docs plus safety manual, verification report, traceability, SBOM |
+| **Tooling** | LVGL Pro Editor | LVGL Pro Editor |
+
+## What LVGL Safe gives you today
+
+A software renderer writing into a framebuffer you own; multiple displays and screens; rectangle,
+label, button, image, image button, and arc widgets; pointer and touch input with press, pressing,
+and click events plus index-based focus handling; multi-language translations and value binding on
+labels; image rotation and perspective transforms; offline image and font converters, so nothing is
+decoded at runtime; and a screenshot-based regression test framework. Everything is selected at
+compile time in a single `ls_conf.h`, and every public function returns an explicit error code.
+
+## Which one to choose
+
+If you need a full-featured GUI for a general-purpose product, use
+[LVGL Open](https://github.com/lvgl/lvgl). It stays free, open, and actively developed.
+
+Choose LVGL Safe when your product has to be certified, and when predictable, allocation-free,
+reviewable code matters more than breadth of features. See [Standards](/standards) for the
+levels the delivery is built to support, and [Delivery](/delivery) for the artifacts you
+receive.

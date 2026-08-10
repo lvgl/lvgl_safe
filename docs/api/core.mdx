@@ -1,0 +1,83 @@
+---
+title: Core Types
+description: The three types every LVGL Safe program uses - the widget header every widget embeds, the display that owns the framebuffer, and the screen that owns the widget list.
+---
+
+## Common base type - `ls_widget_common_t`
+
+<RepoFile path="include/ls_widget.h" />
+
+Always the **first** member of every widget, named `common`.
+
+| Field                  | Type                        | Description                                        |
+|------------------------|-----------------------------|----------------------------------------------------|
+| `type`                 | `const char *`              | Widget type string, e.g. `"ls_button"`             |
+| `widget_next`          | `void *`                    | Next widget on the screen - owned by the library   |
+| `render_cb`            | `ls_render_cb_t`            | Render callback; set by `*_create`, overwrite it to draw the widget yourself |
+| `indev_event_cb`       | `ls_indev_event_cb_t`       | Input event callback (if `LS_USE_INDEV`)           |
+| `indev_click_test_cb`  | `ls_indev_click_test_cb_t`  | Hit-test callback; defaults to the bounding box (if `LS_USE_INDEV`) |
+| `hidden`               | `bool`                      | If true, the widget is not rendered and ignores input |
+| `pressed`              | `bool`                      | True while the widget is being pressed - read, don't write |
+
+## Display - `ls_display_t`
+
+<RepoFile path="include/ls_display.h" />
+
+```c
+ls_error_code_t ls_display_init(ls_display_t * display);
+```
+
+`init` sets no geometry - fill these in yourself afterwards:
+
+| Field           | Type                        | Description                                     |
+|-----------------|-----------------------------|-------------------------------------------------|
+| `hor_res`       | `uint32_t`                  | Width in pixels                                 |
+| `ver_res`       | `int32_t`                   | Height in pixels                                |
+| `stride`        | `int32_t`                   | Bytes per line, i.e. `hor_res * LS_BYTE_PER_PIXEL` |
+| `frame_buffer`  | `ls_frame_buffer_color_t *` | The RGB565 buffer you own and the renderer writes into |
+| `screen_active` | `ls_screen_t *`             | The one screen that gets rendered               |
+
+Switching screens is a single assignment to `screen_active`.
+
+```c
+static ls_frame_buffer_color_t fb[320 * 240];   /*the buffer is yours, not the library's*/
+static ls_display_t display;
+
+if(ls_display_init(&display) != LS_ERROR_CODE_OK) return 1;
+display.hor_res = 320;
+display.ver_res = 240;
+display.stride = 320 * LS_BYTE_PER_PIXEL;
+display.frame_buffer = fb;
+display.screen_active = &screen;
+
+/*In your main loop: */
+if(ls_render(&display) != LS_ERROR_CODE_OK) return 1;
+flush_to_panel(fb);                             /*your own display driver*/
+```
+
+## Screen - `ls_screen_t`
+
+<RepoFile path="include/ls_screen.h" />
+
+```c
+ls_error_code_t ls_screen_init(ls_screen_t * screen);
+```
+
+| Field                | Type             | Description                                             |
+|----------------------|------------------|---------------------------------------------------------|
+| `bg_color`           | `ls_color_t`     | Background color; defaults to white                     |
+| `active_focus_index` | `uint32_t`       | The `focus_index` that currently counts as focused      |
+| `render_cb`          | `ls_render_cb_t` | Screen render hook; `init` installs the default flat `bg_color` fill, and overwriting it replaces that fill |
+
+`widget_head`, `widget_tail` and `screen_next` are the library's bookkeeping - don't
+change them.
+
+```c
+static ls_screen_t screen;
+
+if(ls_screen_init(&screen) != LS_ERROR_CODE_OK) return 1;
+screen.bg_color = LS_COLOR_HEX(0x14181d);
+
+/*Widgets are created onto a screen, and a screen is shown by pointing a display at it.*/
+display.screen_active = &screen;
+```

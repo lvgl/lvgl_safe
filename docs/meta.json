@@ -1,7 +1,17 @@
 {
   "pages": [
-    "general-guide",
-    "api-reference",
-    "examples-guide"
+    "index",
+    "---Overview---",
+    "vs-lvgl-open",
+    "standards",
+    "delivery",
+    "---Get Started---",
+    "build-and-run",
+    "first-program",
+    "---Guides---",
+    "how-it-works",
+    "assets",
+    "---Reference---",
+    "api"
   ]
 }

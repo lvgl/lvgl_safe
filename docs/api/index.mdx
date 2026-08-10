@@ -1,0 +1,77 @@
+---
+title: API Reference
+description: The field-by-field reference for LVGL Safe v0.1.0 - the rules every widget follows, the defaults each one starts from, and the error codes every function returns.
+---
+
+The field-by-field reference for LVGL Safe v0.1.0. For the concepts behind it - the
+widget lifecycle, rendering, colors, input - start with
+[How it works](/how-it-works); to build and run an application, see
+[Build and run](/build-and-run).
+
+Three rules hold for every widget in this reference:
+
+1. `ls_widget_common_t` is always the **first** member, named `common`.
+2. You configure a widget by **assigning its fields directly**, after
+   `ls_<widget>_create()`. There are no setters or getters, and `create` overwrites
+   the struct, so it must come first.
+3. `create` leaves the widget in a **visible** state - opaque, with a placeholder
+   color - so in practice you only have to set geometry and content. The two
+   exceptions are listed under [Defaults after `create`](#defaults-after-create).
+
+## Widgets
+
+<Cards>
+  <Card href="/api/core" title="Core types">Widget common, display, screen</Card>
+  <Card href="/api/rectangle" title="Rectangle">ls_rectangle_t</Card>
+  <Card href="/api/label" title="Label">ls_label_t</Card>
+  <Card href="/api/button" title="Button">ls_button_t</Card>
+  <Card href="/api/image" title="Image">ls_image_t</Card>
+  <Card href="/api/image-button" title="Image button">ls_image_button_t</Card>
+  <Card href="/api/arc" title="Arc">ls_arc_t</Card>
+</Cards>
+
+## Defaults after `create`
+
+All sizes and positions start at 0, and `focus_index` at `UINT32_MAX` (never
+focused). Beyond that:
+
+| Widget | Defaults |
+|---|---|
+| [`ls_rectangle_t`](/api/rectangle) | `#cccccc` fill, opaque; black border of width 0 (no border) |
+| [`ls_label_t`](/api/label) | black text, opaque, left-aligned, `letter_space` 1, **no font** |
+| [`ls_button_t`](/api/button) | `#666666` and opaque in all five *unchecked* states; the five *checked* states are **fully transparent** |
+| [`ls_image_t`](/api/image) | opaque, no rotation, black `a8_color`, **`src` is NULL** |
+| [`ls_image_button_t`](/api/image-button) | **all ten sources are NULL** |
+| [`ls_arc_t`](/api/arc) | blue, opaque, center 30,30, radius 30, thickness 5, sweeping 30°→90° |
+
+The NULL ones are not silent: a label without a `font`, an image without a `src`, or
+an image button whose current state has no source makes `ls_render()` return
+`LS_ERROR_CODE_INVALID_CONFIGURATION` for the whole frame. A widget that draws
+nothing *without* an error is one that is `hidden`, still sized 0, or a
+`checked` button state that was never given a color and opacity.
+
+## Error handling
+
+Every public function returns an `ls_error_code_t`
+(<RepoFile path="include/ls_error_codes.h" inline />) - check it at the call site:
+
+| Code                                   | Value | Meaning                          |
+|----------------------------------------|-------|----------------------------------|
+| `LS_ERROR_CODE_OK`                     | 0     | Success                          |
+| `LS_ERROR_CODE_INTERNAL_ERROR`         | 1     | Unexpected internal failure      |
+| `LS_ERROR_CODE_INVALID_ARGUMENT`       | 2     | NULL / out-of-range argument     |
+| `LS_ERROR_CODE_INVALID_CONFIGURATION`  | 3     | Inconsistent configuration       |
+| `LS_ERROR_CODE_MEMORY_CORRUPTION`      | 4     | Inconsistent internal data       |
+| `LS_ERROR_CODE_RENDER_FAILED`          | 5     | Rendering failed                 |
+
+## Not a widget, but part of the API
+
+| Header | What it gives you |
+|---|---|
+| <RepoFile path="include/ls_color.h" inline /> | `ls_color_t`, `LS_COLOR_MAKE`, `LS_COLOR_HEX`, `ls_color_to_u16()`, `LS_BYTE_PER_PIXEL` |
+| <RepoFile path="include/ls_render.h" inline /> | `ls_render()`, `ls_render_clear_frame_buffer()`, `ls_render_goto_frame_buffer_px()`, `LS_OPA_COVER` |
+| <RepoFile path="include/ls_input.h" inline /> | `ls_indev_process()`, input states, event types, callback typedefs |
+| <RepoFile path="include/ls_font.h" inline /> | `ls_font_t` - a generated glyph-bitmap font descriptor |
+| <RepoFile path="include/ls_translation.h" inline /> | `ls_translation_init()`, `ls_translation_set_language()`, `ls_translation_get()` |
+| <RepoFile path="include/ls_math.h" inline /> | `ls_sin()`, `ls_cos()` - integer trig, so no libm dependency |
+| <RepoFile path="include/ls_conf.h" inline /> | Compile-time feature switches. **Do not edit in the preview** - its values are already baked into the shipped library |

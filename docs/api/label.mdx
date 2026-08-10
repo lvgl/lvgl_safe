@@ -1,0 +1,64 @@
+---
+title: "Label (ls_label_t)"
+description: "On-screen text from a literal, a translation, or a live integer. Needs a generated font, or rendering fails."
+---
+
+<RepoFile path="include/ls_label.h" />
+
+```c
+ls_error_code_t ls_label_create(ls_screen_t * screen, ls_label_t * label);
+ls_error_code_t ls_label_get_text_size(void * widget, uint32_t * width, uint32_t * height);
+```
+
+| Field                 | Type                        | Description                                   |
+|-----------------------|-----------------------------|-----------------------------------------------|
+| `x`, `y`              | `uint32_t`                  | Top-left position                             |
+| `width`, `height`     | `uint32_t`                  | Bounding box; `width` is what `align` centers within |
+| `text`                | `const char *`              | Static text (use `\n` for line breaks)        |
+| `translation`         | `const ls_translation_t *`  | Translated text - an alternative to `text`    |
+| `bind_int`            | `int32_t *`                 | Display the integer this points at            |
+| `bind_fmt`            | `const char *`              | Format string for `bind_int`, e.g. `"%d"`     |
+| `color`               | `ls_color_t`                | Text color                                    |
+| `font`                | `ls_font_t *`               | Font to use                                   |
+| `align`               | `lv_label_align_t`          | `LS_LABEL_ALIGN_LEFT` / `_CENTER` / `_RIGHT`  |
+| `opa`                 | `uint8_t`                   | Opacity (0..255)                              |
+| `letter_space`        | `uint32_t`                  | Extra spacing between characters; defaults to 1 |
+| `underline_thickness` | `uint32_t`                  | Underline thickness (0 = none)                |
+
+**Defaults after `create`:** black text, opaque, left-aligned, `letter_space` 1, **no font**.
+A label without a `font` makes `ls_render()` fail for the whole frame.
+
+Set exactly one text source. `text` is a literal, `translation` follows the current
+language, and `bind_int` + `bind_fmt` renders a live application variable - the label
+re-reads the pointed-to value on every render, so you never rewrite the string
+yourself. See [Assets](/assets) for generating fonts and defining translations.
+
+`ls_label_get_text_size()` measures the text as it would be drawn, which is how you
+size or center a panel around a string whose length you don't know up front.
+
+```c
+extern ls_font_t montserrat_18;   /*a generated font — see Assets*/
+
+static ls_label_t title;
+
+if(ls_label_create(&screen, &title) != LS_ERROR_CODE_OK) return 1;
+title.x = 20;
+title.y = 30;
+title.font = &montserrat_18;      /*without a font, ls_render() fails*/
+title.color = LS_COLOR_HEX(0xe6ebef);
+title.text = "Hello LVGL Safe";
+
+/*A live readout: no string is ever rewritten, the label re-reads `level` every frame.*/
+static int32_t level = 40;
+static ls_label_t readout;
+
+if(ls_label_create(&screen, &readout) != LS_ERROR_CODE_OK) return 1;
+readout.x = 160;
+readout.y = 70;
+readout.width = 0;                /*align centers within `width`, so 0 centers on `x`*/
+readout.align = LS_LABEL_ALIGN_CENTER;
+readout.font = &montserrat_18;
+readout.color = LS_COLOR_HEX(0x3d8bfd);
+readout.bind_int = &level;
+readout.bind_fmt = "%d %%";
+```

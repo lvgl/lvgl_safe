@@ -1,0 +1,49 @@
+---
+title: "Arc (ls_arc_t)"
+description: "A circular segment defined by center, radius, thickness, and a start and end angle. Two of them make a gauge."
+---
+
+<RepoFile path="include/ls_arc.h" />
+
+```c
+ls_error_code_t ls_arc_create(ls_screen_t * screen, ls_arc_t * arc);
+```
+
+| Field                  | Type         | Description                              |
+|------------------------|--------------|------------------------------------------|
+| `center_x`, `center_y` | `int32_t`    | Arc center                               |
+| `radius`               | `uint32_t`   | Radius in pixels (default 30)            |
+| `thickness`            | `uint32_t`   | Line thickness in pixels (default 5)     |
+| `start_deg`, `end_deg` | `uint32_t`   | Start/end angle in degrees (default 30 and 90) |
+| `color`                | `ls_color_t` | Arc color                                |
+| `opa`                  | `uint8_t`    | Opacity (0..255)                         |
+
+0° points right and angles grow clockwise.
+
+**Defaults after `create`:** blue, opaque, center 30,30, radius 30, thickness 5,
+sweeping 30°→90°.
+
+```c
+/*A gauge is two arcs: a full-sweep track, and a colored one on top of it whose
+ `end_deg` you recompute when the value changes.*/
+static ls_arc_t track;
+static ls_arc_t fill;
+
+if(ls_arc_create(&screen, &track) != LS_ERROR_CODE_OK) return 1;
+track.center_x = 160;
+track.center_y = 120;
+track.radius = 50;
+track.thickness = 10;
+track.start_deg = 135;              /*opens downward*/
+track.end_deg = 135 + 270;
+track.color = LS_COLOR_HEX(0x2b333c);
+
+if(ls_arc_create(&screen, &fill) != LS_ERROR_CODE_OK) return 1;
+fill.center_x = 160;
+fill.center_y = 120;
+fill.radius = 50;
+fill.thickness = 10;
+fill.start_deg = 135;
+fill.end_deg = 135 + (270 * (uint32_t) level) / 100;   /*update this as `level` moves*/
+fill.color = LS_COLOR_HEX(0x3d8bfd);
+```

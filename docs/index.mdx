@@ -1,0 +1,87 @@
+---
+title: Introduction
+description: A UI library for safety-critical products - no runtime allocation, no hidden state, deterministic rendering, and the evidence trail your product's certification needs.
+---
+
+LVGL Safe is a small, dependency-free UI library written specifically for safety-critical
+industries. Unlike a general-purpose GUI toolkit, it trades feature richness and convenience for
+**predictability, auditability, and determinism**.
+
+It is not a stripped-down variant you have to qualify from scratch. The delivery includes the
+documentation and verification evidence that feeds directly into your own product's certification
+process, across four target industries: **automotive**, **medical**, **industrial**, and
+**avionics**.
+
+<Callout type="warn">
+**Evaluation preview only - v0.1.0.** LVGL Safe is in early preview and is **not ready for
+production use**. It is published for evaluation and feedback only.
+
+- The public API is **unstable** and **will change** without notice.
+- The safety-oriented properties described in these docs are **design goals**. They are
+  **not yet verified, audited, or qualified**.
+- **Do not deploy LVGL Safe in any real product or safety-critical system.**
+
+See [Standards](/standards) for the levels the full delivery is built to support.
+</Callout>
+
+## Design principles
+
+These are the goals the library is built around:
+
+- **No runtime dynamic memory allocation** - no `malloc`/`free` at runtime. The
+  application owns every widget struct and every buffer.
+- **No internal global or static state** - all state lives in caller-supplied
+  structures.
+- **Widgets are never deleted** - once created on a screen they live for the
+  lifetime of the program.
+- **No external dependencies** - C99 and the standard library only.
+- **Deterministic rendering** - frame rendering is intended to be deterministic
+  in time and in output.
+- **MISRA C:2012 (mandatory rules)** as a conformance target.
+- **Abstract display driver** - the library only writes pixels into a framebuffer
+  you provide. You own the buffer and the main loop. There is no built-in RTOS or
+  OS layer, which also means the library can be integrated into any such environment unchanged.
+
+## Feature snapshot
+
+- Built-in **software renderer** writing an RGB565 framebuffer. Supports
+  RGB888, RGB565, ARGB8888 or A8 image sources.
+- Multiple **displays** and **screens**.
+- Widgets: **rectangle, label, button, image, image button, arc**.
+- **Input / event** handling (touch / pointer) with index-based keyboard focus.
+- **Multi-language translations** and integer binding on labels.
+- **Offline** image and font converters - nothing is decoded at runtime.
+
+> **Note:** RGB888 and RGB565 image sources are not yet supported.
+
+## Where to start
+
+<Cards>
+  <Card icon={<Terminal />} href="/build-and-run" title="Build and run">
+    Install the dependencies, build the two example apps, and see the library running on your
+    desktop in an SDL2 window.
+  </Card>
+
+  <Card icon={<Code />} href="/first-program" title="Your first program">
+    The shape of every LVGL Safe application, from framebuffer to main loop, in one annotated
+    file.
+  </Card>
+
+  <Card icon={<Box />} href="/how-it-works" title="How it works">
+    Displays, screens, and widgets; the widget lifecycle; rendering and colors; input and events.
+  </Card>
+
+  <Card icon={<FileText />} href="/api" title="API reference">
+    The field-by-field reference for every type and widget, with a copy-pasteable snippet for
+    each.
+  </Card>
+
+  <Card icon={<Target />} href="/standards" title="Standards">
+    The functional-safety standards and levels the delivery is built to support, and what
+    substantiates each one.
+  </Card>
+
+  <Card icon={<Blocks />} href="/vs-lvgl-open" title="LVGL Safe vs LVGL Open">
+    Two libraries, one author, opposite trade-offs. Which one your product needs.
+  </Card>
+</Cards>

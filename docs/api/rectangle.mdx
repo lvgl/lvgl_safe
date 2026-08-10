@@ -1,0 +1,44 @@
+---
+title: "Rectangle (ls_rectangle_t)"
+description: "A filled box with an optional border. The simplest widget, and the one panels and separator lines are built from."
+---
+
+<RepoFile path="include/ls_rectangle.h" />
+
+```c
+ls_error_code_t ls_rectangle_create(ls_screen_t * screen, ls_rectangle_t * rectangle);
+```
+
+| Field             | Type         | Description              |
+|-------------------|--------------|--------------------------|
+| `x`, `y`          | `uint32_t`   | Top-left position        |
+| `width`, `height` | `uint32_t`   | Size in pixels           |
+| `bg_color`        | `ls_color_t` | Fill color               |
+| `bg_opa`          | `uint8_t`    | Fill opacity (0..255)    |
+| `border_color`    | `ls_color_t` | Border color             |
+| `border_width`    | `uint32_t`   | Border thickness in px; 0 (the default) means no border |
+
+**Defaults after `create`:** `#cccccc` fill, opaque; black border of width 0 (no border).
+
+```c
+static ls_rectangle_t panel;
+
+if(ls_rectangle_create(&screen, &panel) != LS_ERROR_CODE_OK) return 1;
+panel.x = 20;
+panel.y = 20;
+panel.width = 280;
+panel.height = 90;
+panel.bg_color = LS_COLOR_HEX(0x1e242b);
+
+/*A 1 px separator line, which is just a very thin rectangle.*/
+static ls_rectangle_t line;
+
+if(ls_rectangle_create(&screen, &line) != LS_ERROR_CODE_OK) return 1;
+line.x = 20;
+line.y = 120;
+line.width = 280;
+line.height = 1;
+line.bg_color = LS_COLOR_HEX(0x2b333c);
+```
+
+> **NOTE:** border rendering is not yet implemented.
