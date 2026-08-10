@@ -1,0 +1,88 @@
+---
+title: Your First Program
+description: A complete LVGL Safe application in one file - framebuffer, display, screen, widgets, and the main loop you own.
+---
+
+Every LVGL Safe program has the same shape: give a display a framebuffer you own, init a screen,
+create widgets onto it, configure them by writing struct fields, then loop over input, render, and
+flush.
+
+```c
+#include "ls_display.h"
+#include "ls_screen.h"
+#include "ls_render.h"
+#include "ls_input.h"
+#include "ls_button.h"
+#include "ls_label.h"
+
+#define HOR_RES 800
+#define VER_RES 480
+
+/* Generated ahead of time by scripts/font_conv.py — there is no built-in font */
+extern ls_font_t my_font;
+
+/* The framebuffer is owned by the application — the library allocates nothing */
+static ls_frame_buffer_color_t fb[HOR_RES * VER_RES];
+
+/* Widgets are caller-owned structs that must outlive the screen */
+static ls_display_t display;
+static ls_screen_t  screen;
+static ls_button_t  button;
+static ls_label_t   label;
+
+int main(void)
+{
+    /* 1. Display */
+    if(ls_display_init(&display) != LS_ERROR_CODE_OK) return 1;
+    display.hor_res      = HOR_RES;
+    display.ver_res      = VER_RES;
+    display.stride       = HOR_RES * LS_BYTE_PER_PIXEL;  /* bytes per line */
+    display.frame_buffer = fb;
+
+    /* 2. Screen */
+    if(ls_screen_init(&screen) != LS_ERROR_CODE_OK) return 1;
+    display.screen_active = &screen;
+
+    /* 3. Widgets — created onto the screen, then configured by direct field access */
+    if(ls_button_create(&screen, &button) != LS_ERROR_CODE_OK) return 1;
+    button.x = 100;
+    button.y = 100;
+    button.width  = 200;
+    button.height = 75;
+    button.bg_color_normal  = LS_COLOR_HEX(0xffaaaa);
+    button.bg_color_pressed = LS_COLOR_HEX(0xff0000);
+
+    if(ls_label_create(&screen, &label) != LS_ERROR_CODE_OK) return 1;
+    label.x = 120;
+    label.y = 105;
+    label.width = 160;
+    label.align = LS_LABEL_ALIGN_CENTER;
+    label.font  = &my_font;
+    label.text  = "Hello\nLVGL Safe";
+
+    /* 4. Main loop — owned by the application */
+    while(1) {
+        /* touch_x/touch_y/state come from your own touch driver */
+        if(ls_indev_process(&display, touch_x, touch_y, state, prev_state) != LS_ERROR_CODE_OK) return 1;
+        prev_state = state;
+
+        if(ls_render(&display) != LS_ERROR_CODE_OK) return 1;
+        my_flush_framebuffer_to_screen(fb);   /* your display driver */
+    }
+}
+```
+
+Two things to notice: every fallible call returns an `ls_error_code_t` that is
+checked at the call site, and every struct - framebuffer included - has static
+storage duration. That is the shape of every LVGL Safe program.
+
+A complete, runnable SDL2 integration (framebuffer flush plus mouse/touch/keyboard
+input) is in <RepoFile path="examples/basic_example/main.c" label="examples/basic_example/main.c" inline />.
+
+## Next steps
+
+- [How it works](/how-it-works) - what the display, screen, and widget layers actually do,
+  and the rules the lifecycle imposes.
+- [API reference](/api) - every field of every type, with the defaults each widget
+  starts from.
+- [Assets](/assets) - generating the font this example assumes, plus images and translations.

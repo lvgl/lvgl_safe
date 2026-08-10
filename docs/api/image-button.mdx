@@ -1,0 +1,64 @@
+---
+title: "Image Button (ls_image_button_t)"
+description: "The same state machine as a button, but each state shows a different image. Every state you can reach needs a source."
+---
+
+<RepoFile path="include/ls_image_button.h" />
+
+```c
+ls_error_code_t ls_image_button_create(ls_screen_t * screen, ls_image_button_t * image_button);
+```
+
+Same state machine as [`ls_button_t`](/api/button) (pressed/released, focused/unfocused,
+checked/unchecked, disabled/enabled), but each state shows a different **image**
+instead of a background color:
+
+| Geometry                     | Image source field (all `const ls_image_dsc_t *`) |
+|------------------------------|---------------------------------------------------|
+| `x`, `y` (both `uint32_t`)   | `src_normal`                                      |
+|                              | `src_pressed`                                     |
+|                              | `src_focused`                                     |
+|                              | `src_pressed_focused`                             |
+|                              | `src_disabled`                                    |
+|                              | `src_checked`                                     |
+|                              | `src_checked_pressed`                             |
+|                              | `src_checked_focused`                             |
+|                              | `src_checked_pressed_focused`                     |
+|                              | `src_checked_disabled`                            |
+
+Other fields: `focus_index` (`uint32_t`), `checked` (`bool`), `disabled` (`bool`).
+
+There is no `width`/`height` - the size comes from the descriptor of the active
+state. Unlike the color fields on `ls_button_t`, these have no usable default:
+**all ten sources start NULL**, so every state the widget can reach needs a non-NULL
+source (if those states are used), or rendering fails when it lands there. Pointing
+several states at the same descriptor is normal - a two-image switch typically assigns
+one image to the unchecked states and one to the checked ones.
+
+```c
+extern const ls_image_dsc_t switch_off;
+extern const ls_image_dsc_t switch_on;
+
+/*`checked` is a plain bool you own — the widget does not latch itself, flipping it
+ here is what makes this a toggle.*/
+static void switch_cb(void * widget, ls_indev_event_type_t type)
+{
+    ls_image_button_t * button = widget;
+    if(button == NULL) return;
+    if(type == LS_INDEV_EVENT_TYPE_CLICKED) button->checked = !button->checked;
+}
+
+static ls_image_button_t toggle;
+
+if(ls_image_button_create(&screen, &toggle) != LS_ERROR_CODE_OK) return 1;
+toggle.x = 200;
+toggle.y = 150;
+
+/*This switch is never focused or disabled, so only the four reachable states
+ need a source.*/
+toggle.src_normal = &switch_off;
+toggle.src_pressed = &switch_off;
+toggle.src_checked = &switch_on;
+toggle.src_checked_pressed = &switch_on;
+toggle.common.indev_event_cb = switch_cb;
+```

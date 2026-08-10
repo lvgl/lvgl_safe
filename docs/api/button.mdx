@@ -1,0 +1,73 @@
+---
+title: "Button (ls_button_t)"
+description: "A filled rectangle whose color and opacity are chosen by its state. Ten states, each with its own color field, and five of them start transparent."
+---
+
+<RepoFile path="include/ls_button.h" />
+
+```c
+ls_error_code_t ls_button_create(ls_screen_t * screen, ls_button_t * button);
+```
+
+A button is drawn as a filled rectangle whose background color and opacity are chosen
+by its current **state**. The state is the combination of:
+
+- **pressed / released** - driven by input,
+- **focused / unfocused** - whether `focus_index == screen.active_focus_index`,
+- **checked / unchecked** - the `checked` field, which you set,
+- **disabled / enabled** - the `disabled` field; a disabled button ignores input.
+
+Each reachable combination has its own field rather than an array:
+
+| Geometry          | Color field                           | Opacity field                     |
+|-------------------|---------------------------------------|-----------------------------------|
+| `x`, `y`,         | `bg_color_normal`                     | `bg_opa_normal`                   |
+| `width`, `height` | `bg_color_pressed`                    | `bg_opa_pressed`                  |
+| (all `uint32_t`)  | `bg_color_focused`                    | `bg_opa_focused`                  |
+|                   | `bg_color_pressed_focused`            | `bg_opa_pressed_focused`          |
+|                   | `bg_color_disabled`                   | `bg_opa_disabled`                 |
+|                   | `bg_color_checked`                    | `bg_opa_checked`                  |
+|                   | `bg_color_checked_pressed`            | `bg_opa_checked_pressed`          |
+|                   | `bg_color_checked_focused`            | `bg_opa_checked_focused`          |
+|                   | `bg_color_checked_pressed_focused`    | `bg_opa_checked_pressed_focused`  |
+|                   | `bg_color_checked_disabled`           | `bg_opa_checked_disabled`         |
+
+Colors are `ls_color_t`, opacities `uint8_t`. Watch the asymmetry in the defaults: the
+five unchecked states come up opaque grey, but the five checked ones come up
+**transparent**. If you use `checked`, give those five states a color *and* an
+opacity, or the button vanishes when it is toggled on.
+
+Other fields: `focus_index` (`uint32_t`), `checked` (`bool`), `disabled` (`bool`).
+
+A button carries no label of its own - create an [`ls_label_t`](/api/label) over it for the
+caption.
+
+```c
+static void button_cb(void * widget, ls_indev_event_type_t type)
+{
+    (void) widget;
+    if(type == LS_INDEV_EVENT_TYPE_CLICKED) level += 10;
+}
+
+static ls_button_t button;
+
+if(ls_button_create(&screen, &button) != LS_ERROR_CODE_OK) return 1;
+button.x = 20;
+button.y = 150;
+button.width = 140;
+button.height = 48;
+button.bg_color_normal = LS_COLOR_HEX(0x2a323b);
+button.bg_color_pressed = LS_COLOR_HEX(0x3d8bfd);
+button.common.indev_event_cb = button_cb;
+
+/*The caption is a separate label, created after the button so it is drawn on top.*/
+static ls_label_t caption;
+
+if(ls_label_create(&screen, &caption) != LS_ERROR_CODE_OK) return 1;
+caption.x = 90;                   /*the button's horizontal center*/
+caption.y = 164;
+caption.align = LS_LABEL_ALIGN_CENTER;
+caption.font = &montserrat_18;
+caption.color = LS_COLOR_HEX(0xe6ebef);
+caption.text = "STEP +10";
+```

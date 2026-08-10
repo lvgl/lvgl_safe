@@ -1,0 +1,147 @@
+---
+title: How It Works
+description: Displays, screens, and widgets; the lifecycle rules that follow from never allocating; how rendering and colors work; and how input reaches a widget.
+---
+
+The concepts behind the API: what the layers are, what each one owns, and the rules that follow
+from a library that never allocates and keeps no hidden state.
+
+## Architecture
+
+```
+ ls_display_t              (framebuffer + active screen)
+     │
+     └─ ls_screen_t         (linked list of widgets, background color, focus)
+            │
+            ├─ ls_rectangle_t
+            ├─ ls_label_t
+            ├─ ls_button_t   ← each widget embeds ls_widget_common_t
+            ├─ ls_image_t       (type id, render_cb, input callbacks, hidden…)
+            └─ …
+```
+
+- A **display** points to a framebuffer and to the currently active **screen**.
+  Only the active screen is ever drawn.
+- A **screen** holds its widgets in a singly linked list, in creation order.
+- Each **widget** embeds an `ls_widget_common_t` header carrying the link to the
+  next widget, a render callback and (optionally) input callbacks.
+- `ls_render()` first calls the screen's own render callback, which by default fills
+  the framebuffer with `bg_color`, then walks the widget list and calls each widget's
+  render callback in creation order - so a widget created later draws on top of an
+  earlier one.
+- `ls_indev_process()` feeds one pointer sample to the active screen and calls the
+  event callback of the widget under it.
+
+Nothing in this chain reads or writes hidden state: everything the library needs is
+reachable from the `ls_display_t` you pass in.
+
+## Widget lifecycle
+
+Widgets do not allocate. The pattern is always the same:
+
+1. **Declare** the widget struct. The caller owns the memory and it must outlive
+   the screen.
+2. **Create** it with `ls_<widget>_create(&screen, &widget)`. This resets the struct
+   to its defaults, installs the render callback and appends the widget to the
+   screen's list. Configure the widget *after* this call, never before - `create`
+   overwrites whatever was there.
+3. **Configure** it by writing its fields directly. There are no setters or getters,
+   and you can change any field at any time - the new value is picked up by the next
+   `ls_render()`.
+4. Widgets **cannot be removed**. Set `widget.common.hidden = true` to disable one
+   and prevent it from getting rendered on the active screen.
+
+Because the screen stores a *pointer* to your struct, the struct must not be moved
+or go out of scope while the screen is alive.
+
+## Rendering
+
+<RepoFile path="include/ls_render.h" />
+
+```c
+ls_error_code_t ls_render(ls_display_t * display);                      /* render active screen */
+ls_error_code_t ls_render_clear_frame_buffer(ls_display_t * display);   /* clear to black       */
+```
+
+Call `ls_render()` once per frame, then push the framebuffer to your display. The
+library never touches hardware itself, and it renders the full active screen every
+time.
+
+Two hooks let you draw things the widget set does not cover:
+
+- **Per widget** - overwrite `widget.common.render_cb` to draw a widget yourself
+  instead of letting the library draw it.
+- **Per screen** - overwrite `screen.render_cb` to draw your own backdrop. This
+  *replaces* the default flat `bg_color` fill, so keep the pointer that
+  `ls_screen_init()` installed if you want to delegate back to it.
+
+Both hooks receive the display and reach pixels through
+`ls_render_goto_frame_buffer_px()`, which resolves an x/y coordinate to a pointer
+into the framebuffer currently being rendered. The `lvgl_safe_api_tour` example
+dedicates a slide/screen to each of the four extension points - the two render hooks,
+the event callback and the click test.
+
+## Colors
+
+Defined in <RepoFile path="include/ls_color.h" inline />. An `ls_color_t` holds 8-bit
+red/green/blue channels.
+
+```c
+ls_color_t c1 = LS_COLOR_MAKE(255, 170, 170);  /* r, g, b (0..255) */
+ls_color_t c2 = LS_COLOR_HEX(0xffaaaa);        /* 0xRRGGBB          */
+uint16_t   c2_rgb565 = ls_color_to_u16(c2);    /* framebuffer pixel */
+```
+
+The framebuffer itself is RGB565 (`ls_frame_buffer_color_t`, `uint16_t`), so colors
+are converted on the way in and red/blue keep 5 bits each, green 6.
+`LS_BYTE_PER_PIXEL` (2) is the value to use when computing `display.stride`.
+
+Opacity is a `uint8_t` in the `0..255` range. `LS_OPA_COVER` (`0xff`, defined in
+<RepoFile path="include/ls_render.h" inline />) is fully opaque. `*_create` leaves a widget
+opaque and in a placeholder color, so it is visible as soon as you give it a size -
+you only assign `opa` when you actually want transparency. The
+[API reference](/api#defaults-after-create) lists the defaults per widget.
+
+## Input and events
+
+Defined in <RepoFile path="include/ls_input.h" inline />, enabled by `LS_USE_INDEV`. The
+library has no notion of a driver or a tick: the application reports the pointer
+position and state once per loop, and everything else follows from that.
+
+```c
+ls_error_code_t ls_indev_process(ls_display_t * display,
+                                 uint32_t x, uint32_t y,
+                                 ls_indev_state_t state,
+                                 ls_indev_state_t prev_state);
+```
+
+- `ls_indev_state_t` is `LS_INDEV_STATE_PRESSED` or `LS_INDEV_STATE_RELEASED`.
+- Widget under `x`/`y` receives an `ls_indev_event_type_t` through its
+  `common.indev_event_cb`: `LS_INDEV_EVENT_TYPE_PRESSED` (press starts),
+  `..._PRESSING` (held), `..._CLICKED` (released over the same widget).
+- Hidden and disabled widgets are skipped.
+
+```c
+void on_event(void * widget, ls_indev_event_type_t type)
+{
+    if(type == LS_INDEV_EVENT_TYPE_CLICKED) { /* handle the click */ }
+}
+
+button.common.indev_event_cb = on_event;
+```
+
+Hit-testing defaults to the widget's bounding box. Assign
+`common.indev_click_test_cb` to override it - for a round button, for example.
+
+### Keyboard focus
+
+Keyboard-style focus needs no separate input path: each focusable widget has a
+`focus_index`, the screen has an `active_focus_index`, and a widget renders as
+focused when the two match. Moving focus is your code advancing that one number.
+A freshly created widget starts with `focus_index` set to `UINT32_MAX`, so it is
+never accidentally focused before you assign it an index.
+
+## Next steps
+
+- [Assets](/assets) - fonts, images, and translations, all generated ahead of time.
+- [API reference](/api) - every type and every field.

@@ -1,0 +1,117 @@
+---
+title: Assets
+description: Fonts, images, and translations. Everything a widget draws is converted ahead of time and compiled in - nothing is loaded or decoded at runtime.
+---
+
+LVGL Safe installs no default assets - there is no built-in font and no built-in
+icon. Every image and font a widget uses is compiled into the binary and declared
+explicitly. The two converters in <RepoFile path="scripts/" label="scripts/" inline /> turn ordinary asset files
+into the C sources you add to your build.
+
+Their dependencies:
+
+```bash
+pip install pillow freetype-py   # cairosvg as well, only if you convert SVG input
+```
+
+Both converters take an output mode:
+
+- **`c_output`** - writes a ready-to-compile `const` descriptor as C source. Add
+  the file to your build and `extern` the symbol. This is the supported path.
+- **`file_output`** - writes the same asset as small binary blobs, intended for
+  setups that load assets at runtime.
+
+> **Note:** `file_output` is not operational - the binary asset loader is
+> still under development. Use `c_output` for now.
+
+## Images - `image_conv.py`
+
+```
+image_conv.py <image> <argb8888|a8|rgb565> <stride_align> <name> <c_output|file_output>
+```
+
+| Argument | Meaning |
+|---|---|
+| `image` | input file: `.png`, `.jpg`, `.jpeg`, `.bmp` or `.svg` |
+| color format | `argb8888` for full color with alpha, `a8` for an alpha-only mask that the widget tints, `rgb565` for opaque 16-bit |
+| `stride_align` | row alignment in bytes; `4` is a safe default, match it to what your target's blitter wants |
+| `name` | the C symbol name - this is what you `extern` in your application |
+| mode | `c_output` writes the C source to **stdout**, so redirect it to a file |
+
+```bash
+python3 scripts/image_conv.py my_icon.png argb8888 4 my_icon c_output > images/my_icon.c
+```
+
+Then declare and use it:
+
+```c
+extern const ls_image_dsc_t my_icon;   /* the name you passed as argument 4 */
+```
+
+Add `images/my_icon.c` to your `add_executable(...)` list and it is linked in. The image widget's
+fields and the supported color formats are in [Image](/api/image).
+
+## Fonts - `font_conv.py`
+
+`ls_font_t` (<RepoFile path="include/ls_font.h" inline />) is a glyph-bitmap descriptor:
+a bitmap blob, a per-glyph table, and the Unicode range it covers. Assign one to a
+label with `label.font`. The fonts used by the basic example are in
+<RepoFile path="examples/basic_example/fonts/" label="examples/basic_example/fonts" inline />.
+
+```
+font_conv.py <font.ttf> <first> <last> <render_px> <name> <c_output|file_output>
+```
+
+| Argument | Meaning |
+|---|---|
+| `font.ttf` | any TrueType font FreeType can read |
+| `first`, `last` | the inclusive Unicode codepoint range to include - `32 127` is printable ASCII |
+| `render_px` | pixel size to rasterize at; one size per generated font, so a 12 px and an 18 px face are two separate files |
+| `name` | the C symbol name |
+| mode | `c_output` writes to **stdout** |
+
+```bash
+python3 scripts/font_conv.py Montserrat-Medium.ttf 32 127 18 montserrat_18 c_output > fonts/montserrat_18.c
+```
+
+```c
+extern ls_font_t montserrat_18;   /* note: not const */
+```
+
+Keep the range as narrow as your UI actually needs - it is the main driver of the
+generated font's size in flash. If a string uses a codepoint outside the range you
+converted, that glyph is not in the binary.
+
+## Translations
+
+Multi-language text (<RepoFile path="include/ls_translation.h" inline />). Each
+`ls_translation_t` is one string in all languages, identified by a `tag`:
+
+```c
+ls_error_code_t ls_translation_init(ls_translation_t * translations,
+                                    uint32_t translation_cnt,
+                                    uint32_t language_cnt);
+ls_error_code_t ls_translation_set_language(uint32_t language_index);
+ls_error_code_t ls_translation_get(const char * tag,
+                                   const ls_translation_t ** output);
+```
+
+Point `label.translation` at one instead of setting `label.text`, and the label
+follows the current language. Switching language is a single
+`ls_translation_set_language()` call - every label bound to a translation updates on
+the next render. The `lvgl_safe_api_tour` example does exactly this for three
+languages.
+
+## `file_output` mode
+
+Both scripts also accept `file_output` instead of `c_output`. Rather than emitting C,
+this writes the raw asset as small binary blobs into the **current working
+directory**, intended for setups that load assets at runtime instead of linking them
+in:
+
+- `image_conv.py` → `<image>.pixels` and `<image>.meta`
+- `font_conv.py` → `<font>.<px>.bitmap`, `<font>.<px>.glyphs` and `<font>.<px>.meta`
+
+The converters produce these files today, but the preview library ships **no runtime
+asset loader**, so there is nothing to feed them to yet. Both examples use
+`c_output`, and so should you.

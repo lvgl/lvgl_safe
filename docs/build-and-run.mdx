@@ -1,0 +1,142 @@
+---
+title: Build and Run
+description: Install the dependencies, build the two example applications, and run them on your desktop in an SDL2 window - no target hardware needed.
+---
+
+Both examples shipped with the LVGL Safe preview (v0.1.0) run on your desktop in an SDL2 window, so
+you can evaluate the library before any target hardware is involved.
+
+## 1. What you need
+
+| | |
+|---|---|
+| **CMake** | 3.16 or newer |
+| **A C99 compiler (or newer)** | GCC or Clang |
+| **SDL2 development files** | the simulator backend the examples draw into |
+| **The LVGL Safe package** | already unpacked in the repository root (<RepoFile path="include/" label="include/" inline /> and <RepoFile path="lib/" label="lib/" inline />) |
+
+Installing the tools and dependencies:
+
+```bash
+sudo apt install cmake build-essential libsdl2-dev   # Debian / Ubuntu
+brew install cmake sdl2                              # macOS
+```
+
+Python is **not** needed to build the examples. It is only needed if you want to
+convert your own images and fonts - see [Assets](/assets).
+
+## 2. Build and run
+
+From the repository root:
+
+```bash
+cmake -S . -B build
+cmake --build build -j
+```
+
+That configures both examples and produces two binaries:
+
+```bash
+./build/examples/basic_example/basic_example
+./build/examples/lvgl_safe_api_tour/lvgl_safe_api_tour
+```
+
+The package is already unpacked here, so nothing is downloaded or extracted at
+configure time. The top-level <RepoFile path="CMakeLists.txt" inline /> finds the unpacked
+package in the repository root and imports the library through the CMake config
+package it ships (`lib/cmake/lvgl_safe/`). An unpacked
+`lvgl_safe-x.y.z-<platform>/` subdirectory is picked up as well. To use a copy kept
+somewhere else, point at the directory that contains `include/` and `lib/`:
+
+```bash
+cmake -S . -B build -DLS_PACKAGE_PREFIX=/path/to/lvgl_safe-0.1.0-linux-x86_64
+```
+
+A successful configure prints the version and location it resolved:
+
+```
+-- Found LVGL Safe 0.1.0 in /path/to/lvgl_safe
+-- SDL2 target for examples: SDL2::SDL2
+```
+
+Linking your own application against the library is the same two lines the examples
+use (see <RepoFile path="examples/basic_example/CMakeLists.txt" label="examples/basic_example/CMakeLists.txt" inline />) - every font
+and image is a generated C file you list alongside your own sources:
+
+```cmake
+add_executable(my_app main.c fonts/my_font.c images/my_image.c)
+target_link_libraries(my_app PRIVATE lvgl_safe::lvgl_safe ${LS_SDL2_LIBRARY})
+```
+
+### Compile-time configuration
+
+Features are selected in a single header, <RepoFile path="include/ls_conf.h" inline /> - for example
+`LS_USE_INDEV`, `LS_USE_RENDER_TEXT` or `LS_USE_RENDER_IMAGE_ROTATED`.
+
+> **Note on `ls_conf.h`:** the shipped <RepoFile path="include/ls_conf.h" label="include/ls_conf.h" inline />
+> is authoritative, and the copies in the example folders are identical to it. Its
+> values are already compiled into `liblvgl_safe.a` and baked into the struct layouts
+> in `include/`, so it must not be edited - every feature of the preview library is
+> enabled as shipped.
+
+## 3. The two examples
+
+We suggest trying the examples in this order.
+
+### `lvgl_safe_api_tour` - what the library can do
+
+A deck of eleven screens, one topic per screen, at 1024x600. Click the arrows in the
+footer to move through it; the deck wraps around in both directions. The UP/DOWN keys
+move the keyboard focus - most screens have only the footer's language button to
+focus, but the `ls_button` and event-callback screens have several.
+
+It covers every widget type in v0.1.0 - rectangle, label, arc, button, image button,
+image - and all four extension points: the input event callback, custom hit testing, a
+per-widget render hook, and a whole-screen render hook. Nothing is hidden behind a
+helper function, so each screen doubles as reference code for the topic it names.
+
+The whole deck is translated. The footer button cycles English, German and French, and
+every string on screen follows it, because the labels are bound to an
+`ls_translation_t` rather than to a literal. The text itself lives in
+<RepoFile path="examples/lvgl_safe_api_tour/translations.c" label="examples/lvgl_safe_api_tour/translations.c" inline /> - one row per
+string, three languages per row - so `main.c` holds the layout and the logic and none
+of the wording. The only strings it builds itself are the ones that are not language
+at all, like the `01 / 11` slide counter.
+
+Start here to see the capabilities. → <RepoFile path="examples/lvgl_safe_api_tour/main.c" label="examples/lvgl_safe_api_tour/main.c" inline />
+
+### `basic_example` - how an application is put together
+
+One display, two screens, one widget of each basic kind, and a few callbacks, at
+800x480. Every element carries a dimmed tag naming its widget type, so what you see on
+screen maps directly onto the code.
+
+STEP +10 and RESET drive a single application variable; the readout and the arc both
+follow it, and the switch shows and hides the arc. The arrow icons move between the
+two screens - the second screen reads the same variable, which shows that application
+state is not owned by a screen.
+
+This is the file to copy from when starting your own application. It is laid out to
+show the general shape of every LVGL Safe program: give the display a framebuffer you
+own, init a screen, create widgets onto it, configure them by writing struct fields,
+then loop over input, render, and flush.
+
+Two properties worth noticing as you read: every widget is a caller-owned `static`
+struct created once at start-up - nothing is allocated at runtime and nothing is ever
+destroyed - and every fallible call returns an `ls_error_code_t` that is checked at
+the call site.
+
+See → <RepoFile path="examples/basic_example/main.c" label="examples/basic_example/main.c" inline />
+
+For a line-by-line walkthrough of that shape, see [Your first program](/first-program).
+
+## 4. If something goes wrong
+
+| Symptom | Cause |
+|---|---|
+| `No unpacked LVGL Safe package found in ...` | `include/` and `lib/` are missing from the repository root - extract the package there, or pass `-DLS_PACKAGE_PREFIX=<path>` |
+| `... does not look like an unpacked LVGL Safe package` | the path given to `-DLS_PACKAGE_PREFIX` is not the directory holding `include/` and `lib/` (`lib/cmake/lvgl_safe/lvgl_safeConfig.cmake` was not found there) |
+| SDL2 not found at configure time | install the SDL2 **development** package, not just the runtime |
+| A widget draws nothing, no error | its `width`/`height` are still 0, `common.hidden` is set, or it is a button in a `checked` state that was never given a color and opacity - those five states default to transparent |
+| `ls_render()` returns 3 (`LS_ERROR_CODE_INVALID_CONFIGURATION`) | some widget on the active screen is missing a required source: a label with no `font`, an image with no `src`, or an image button whose current state's `src_*` is NULL. One such widget fails the whole frame |
+| A widget was configured but nothing changed | the fields were set *before* `ls_<widget>_create()`, which resets the struct - always configure after creating |

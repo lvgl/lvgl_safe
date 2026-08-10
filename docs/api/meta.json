@@ -1,0 +1,13 @@
+{
+  "title": "API",
+  "pages": [
+    "core",
+    "---Widgets---",
+    "rectangle",
+    "label",
+    "button",
+    "image",
+    "image-button",
+    "arc"
+  ]
+}
