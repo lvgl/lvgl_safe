@@ -138,13 +138,25 @@ predictable, allocation-free, reviewable code matters more than breadth of featu
 
 The quickest way to see what the preview can do is to build the two example apps in
 [examples/](/examples/). They run on your desktop in an SDL2 window, so no target
-hardware is needed. Three guides cover the basics of using the LVGL Safe preview:
+hardware is needed.
 
-| Document | Read it for |
+The full documentation can be found at **[lvgl.io/docs/safe](https://lvgl.io/docs/safe)**. Where to go
+depends on what you are after:
+
+| Start here | If you want to |
 |---|---|
-| [Examples Guide](/docs/examples-guide.mdx) | Building and running the two example apps, and converting your own images and fonts |
-| [General Guide](/docs/general-guide.mdx) | What the library is and how displays, screens and widgets fit together: the concepts behind the API |
-| [API reference](/docs/api-reference.mdx) | The field-by-field reference for every type and widget, with a copy-pasteable snippet for each |
+| [Build and Run](https://lvgl.io/docs/safe/build-and-run) | Install the dependencies and get the two examples running on your desktop |
+| [Your First Program](https://lvgl.io/docs/safe/first-program) | Write your own application, following one annotated file from framebuffer to main loop |
+| [How It Works](https://lvgl.io/docs/safe/how-it-works) | Understand the concepts behind the API: displays and screens, the widget lifecycle, rendering, input and events |
+| [Assets](https://lvgl.io/docs/safe/assets) | Convert your own images and fonts into compiled-in C sources |
+| [API Reference](https://lvgl.io/docs/safe/api) | Look up the field-by-field reference for every type and widget, with a copy-pasteable snippet for each |
+| [Standards](https://lvgl.io/docs/safe/standards) | Check the supported standards and levels, and what substantiates each one |
+| [Delivery](https://lvgl.io/docs/safe/delivery) | See every document and artifact that ships with the full delivery |
+
+Unsure if the library is the right choice for your product? Read
+[LVGL Safe vs LVGL Open](https://lvgl.io/docs/safe/vs-lvgl-open) and
+[Standards](https://lvgl.io/docs/safe/standards) first, then come back to
+[Build and Run](https://lvgl.io/docs/safe/build-and-run).
 
 ## Get in Touch
 
