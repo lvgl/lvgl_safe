@@ -8,21 +8,36 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # ---------------------------------------------------------------------------
 # 1. Locate the unpacked pre-built LVGL Safe package
 # ---------------------------------------------------------------------------
-# The package is an extracted tarball: <prefix>/include, <prefix>/lib and
-# <prefix>/lib/cmake/lvgl_safe. By default it is expected to be unpacked right
-# here (this directory then holds include/ and lib/); an unpacked
-# lvgl_safe-x.y.z-<platform>/ subdirectory is picked up as well.
+# Each platform gets its own tarball, extracted as a sibling
+# lvgl_safe-x.y.z-<platform>/ subdirectory (<prefix>/include, <prefix>/lib and
+# <prefix>/lib/cmake/lvgl_safe). Several platform packages can live in the repo
+# side by side - only the subdirectory whose name matches the host platform is
+# considered, so the same CMakeLists.txt picks the right static library
+# (liblvgl_safe.a, lvgl_safe.lib, ...) without any extra flags. The package is
+# never unpacked directly into the repository root.
 #
 # Override with -DLS_PACKAGE_PREFIX=/path/to/unpacked/lvgl_safe-x.y.z-<platform>
 if(NOT LS_PACKAGE_PREFIX)
-    set(LS_PACKAGE_PREFIX_CANDIDATES "${CMAKE_CURRENT_SOURCE_DIR}")
+    if(WIN32)
+        set(LS_PLATFORM_TAG "windows")
+    else()
+        set(LS_PLATFORM_TAG "linux")
+    endif()
 
     file(GLOB LS_PACKAGE_PREFIX_SUBDIRS
+         LIST_DIRECTORIES true
          "${CMAKE_CURRENT_SOURCE_DIR}/lvgl_safe-*")
     list(SORT LS_PACKAGE_PREFIX_SUBDIRS)
     # Newest version last after the sort, so search it first.
     list(REVERSE LS_PACKAGE_PREFIX_SUBDIRS)
-    list(APPEND LS_PACKAGE_PREFIX_CANDIDATES ${LS_PACKAGE_PREFIX_SUBDIRS})
+
+    # Only a package built for this host platform is a valid candidate.
+    set(LS_PACKAGE_PREFIX_CANDIDATES "")
+    foreach(candidate IN LISTS LS_PACKAGE_PREFIX_SUBDIRS)
+        if(candidate MATCHES "-${LS_PLATFORM_TAG}(-|$)")
+            list(APPEND LS_PACKAGE_PREFIX_CANDIDATES "${candidate}")
+        endif()
+    endforeach()
 
     foreach(candidate IN LISTS LS_PACKAGE_PREFIX_CANDIDATES)
         if(EXISTS "${candidate}/lib/cmake/lvgl_safe/lvgl_safeConfig.cmake")
@@ -33,9 +48,10 @@ if(NOT LS_PACKAGE_PREFIX)
 
     if(NOT LS_PACKAGE_PREFIX)
         message(FATAL_ERROR
-                "No unpacked LVGL Safe package found in ${CMAKE_CURRENT_SOURCE_DIR}. "
-                "Extract lvgl_safe-x.y.z-<platform>.tar.gz here, or pass "
-                "-DLS_PACKAGE_PREFIX=<path> to point at the unpacked package.")
+                "No unpacked LVGL Safe package for '${LS_PLATFORM_TAG}' found in "
+                "${CMAKE_CURRENT_SOURCE_DIR}. Extract lvgl_safe-x.y.z-${LS_PLATFORM_TAG}.tar.gz "
+                "as a sibling directory here, or pass -DLS_PACKAGE_PREFIX=<path> to point at "
+                "the unpacked package.")
     endif()
 endif()
 
@@ -61,7 +77,7 @@ message(STATUS "Found LVGL Safe ${lvgl_safe_VERSION} in ${LS_PACKAGE_PREFIX}")
 
 # IMPORTANT NOTE: the shipped include/ls_conf.h is authoritative — its values are baked
 # into the struct layouts inside liblvgl_safe.a, ls_conf.h must not be changed as all
-# functionality of the lib as already made available.
+# functionality of the lib is already made available.
 
 # ---------------------------------------------------------------------------
 # 3. SDL2 backend used by the examples (${LS_SDL2_LIBRARY})
@@ -70,6 +86,9 @@ message(STATUS "Found LVGL Safe ${lvgl_safe_VERSION} in ${LS_PACKAGE_PREFIX}")
 find_package(SDL2 QUIET)
 if(TARGET SDL2::SDL2)
     set(LS_SDL2_LIBRARY SDL2::SDL2)
+    if(WIN32 AND TARGET SDL2::SDL2main)
+        set(LS_SDL2_LIBRARY SDL2::SDL2main ${LS_SDL2_LIBRARY})
+    endif()
 else()
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LS_SDL2 REQUIRED IMPORTED_TARGET sdl2)

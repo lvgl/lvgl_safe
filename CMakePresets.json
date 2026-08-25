@@ -1,0 +1,51 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "ubuntu",
+      "displayName": "Ubuntu (GCC)",
+      "description": "Build the examples on Ubuntu/Debian with the system GCC toolchain.",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/ubuntu",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "windows",
+      "displayName": "Windows (MSYS2 MinGW-w64 GCC)",
+      "description": "Build the examples on Windows with the MSYS2 mingw-w64 GCC toolchain.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/mingw64",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "C:/msys64/mingw64/bin/gcc.exe",
+        "CMAKE_PREFIX_PATH": "C:/msys64/mingw64"
+      },
+      "environment": {
+        "PATH": "C:/msys64/mingw64/bin;$penv{PATH}"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ubuntu",
+      "configurePreset": "ubuntu",
+      "nativeToolOptions": ["-j"]
+    },
+    {
+      "name": "windows",
+      "configurePreset": "windows",
+      "environment": {
+        "PATH": "C:/msys64/mingw64/bin;$penv{PATH}"
+      }
+    }
+  ]
+}

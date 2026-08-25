@@ -17,6 +17,7 @@ extern "C" {
 #include "ls_widget.h"
 #include "ls_color.h"
 #include "ls_font.h"
+#include "ls_image_dsc.h"
 
 /*********************
  *      DEFINES
@@ -25,20 +26,6 @@ extern "C" {
 /**********************
  *      TYPEDEFS
  **********************/
-
-typedef enum {
-	LS_IMAGE_COLOR_FORMAT_A8,
-	LS_IMAGE_COLOR_FORMAT_ARGB8888,
-	LS_IMAGE_COLOR_FORMAT_RGB565,
-}ls_image_color_format_t;
-
-typedef struct {
-    ls_frame_buffer_color_t color_format;
-    int32_t width;
-    int32_t height;
-    int32_t stride;
-    const void * data;
-}ls_image_dsc_t;
 
 typedef struct
 {

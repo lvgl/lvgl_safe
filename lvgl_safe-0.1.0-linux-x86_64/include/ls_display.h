@@ -46,7 +46,7 @@ typedef struct
 
 	/**
 	 * `ls_render` renders to this buffer.
-	 * Must be at least stride x ver_res x bytes_per_pixel byte sized TODO: Is this correct? Shouldn't it be only stride x ver_res?
+	 * Must be at least stride x ver_res x bytes_per_pixel byte sized
 	 */
 	ls_frame_buffer_color_t * frame_buffer;
 
