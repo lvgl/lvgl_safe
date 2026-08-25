@@ -13,48 +13,73 @@ you can evaluate the library before any target hardware is involved.
 | **CMake** | 3.16 or newer |
 | **A C99 compiler (or newer)** | GCC or Clang |
 | **SDL2 development files** | the simulator backend the examples draw into |
-| **The LVGL Safe package** | already unpacked in the repository root (<RepoFile path="include/" label="include/" inline /> and <RepoFile path="lib/" label="lib/" inline />) |
+| **The LVGL Safe package** | already unpacked as a sibling folder, e.g. <RepoFile path="lvgl_safe-0.1.0-linux-x86_64/" label="lvgl_safe-0.1.0-linux-x86_64/" inline /> (holding `include/` and `lib/`) |
 
-Installing the tools and dependencies:
+### Installing the tools and dependencies
+
+On Debian-based distributions (Debian / Ubuntu) using the apt package manager:
 
 ```bash
-sudo apt install cmake build-essential libsdl2-dev   # Debian / Ubuntu
-brew install cmake sdl2                              # macOS
+sudo apt install cmake build-essential libsdl2-dev
 ```
+
+Windows builds use the MSYS2 mingw-w64 GCC toolchain (https://www.msys2.org/). Install the
+packages once from an MSYS2 shell:
+
+```bash
+pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake \
+                    mingw-w64-x86_64-ninja mingw-w64-x86_64-SDL2
+```
+> **Note:** If you are using VSCode follow these [instructions](https://code.visualstudio.com/docs/cpp/config-mingw) to set up MSYS2 mingw-w64 and come back to this guide when installing the needed packages.
 
 Python is **not** needed to build the examples. It is only needed if you want to
 convert your own images and fonts - see [Assets](/assets).
 
 ## 2. Build and run
 
-From the repository root:
+The LVGL Safe repository ships an `ubuntu` and a `windows` preset, so `cmake
+--preset <name>` and `cmake --build --preset <name>` configure and build the same way regardless
+of platform.
+
+### Using the bundled CMake presets
+
+On Debian-based distributions (Debian / Ubuntu), in the repository
+root:
 
 ```bash
-cmake -S . -B build
-cmake --build build -j
+cmake --preset ubuntu
+cmake --build --preset ubuntu
+```
+
+On Windows from a regular Windows shell (PowerShell or cmd), in the repository
+root:
+
+```PowerShell
+cmake --preset windows
+cmake --build --preset windows
 ```
 
 That configures both examples and produces two binaries:
 
 ```bash
-./build/examples/basic_example/basic_example
-./build/examples/lvgl_safe_api_tour/lvgl_safe_api_tour
+./build/<platform>/examples/basic_example/basic_example
+./build/<platform>/examples/lvgl_safe_api_tour/lvgl_safe_api_tour
 ```
 
-The package is already unpacked here, so nothing is downloaded or extracted at
-configure time. The top-level <RepoFile path="CMakeLists.txt" inline /> finds the unpacked
-package in the repository root and imports the library through the CMake config
-package it ships (`lib/cmake/lvgl_safe/`). An unpacked
-`lvgl_safe-x.y.z-<platform>/` subdirectory is picked up as well. To use a copy kept
-somewhere else, point at the directory that contains `include/` and `lib/`:
+The top-level <RepoFile path="CMakeLists.txt" inline /> looks for `lvgl_safe-x.y.z-<platform>/`
+subdirectories next to it and imports the library through the CMake config package each one ships
+(`lib/cmake/lvgl_safe/`). Only the subdirectory whose name matches the host
+platform (`linux`, `windows`) is considered, so the same command resolves to the right
+static library. To use a copy kept somewhere else instead, point at the directory that contains `include/` and
+`lib/`. For Ubuntu:
 
 ```bash
-cmake -S . -B build -DLS_PACKAGE_PREFIX=/path/to/lvgl_safe-0.1.0-linux-x86_64
+cmake --preset ubuntu -DLS_PACKAGE_PREFIX=/path/to/lvgl_safe-0.1.0-linux-x86_64
 ```
 
 A successful configure prints the version and location it resolved:
 
-```
+```bash
 -- Found LVGL Safe 0.1.0 in /path/to/lvgl_safe
 -- SDL2 target for examples: SDL2::SDL2
 ```
@@ -70,14 +95,13 @@ target_link_libraries(my_app PRIVATE lvgl_safe::lvgl_safe ${LS_SDL2_LIBRARY})
 
 ### Compile-time configuration
 
-Features are selected in a single header, <RepoFile path="include/ls_conf.h" inline /> - for example
-`LS_USE_INDEV`, `LS_USE_RENDER_TEXT` or `LS_USE_RENDER_IMAGE_ROTATED`.
+Features are selected in a single header, `ls_conf.h` (in each platform package's `include/`) -
+for example `LS_USE_INDEV`, `LS_USE_RENDER_TEXT` or `LS_USE_RENDER_IMAGE_ROTATED`.
 
-> **Note on `ls_conf.h`:** the shipped <RepoFile path="include/ls_conf.h" label="include/ls_conf.h" inline />
-> is authoritative, and the copies in the example folders are identical to it. Its
-> values are already compiled into `liblvgl_safe.a` and baked into the struct layouts
-> in `include/`, so it must not be edited - every feature of the preview library is
-> enabled as shipped.
+> **Note on `ls_conf.h`:** the shipped `ls_conf.h` is authoritative, and the copies in the
+> example folders are identical to it. Its values are already compiled into the static
+> library and baked into the struct layouts in `include/`, so it must not be edited - every
+> feature of the preview library is enabled as shipped.
 
 ## 3. The two examples
 
@@ -134,7 +158,7 @@ For a line-by-line walkthrough of that shape, see [Your first program](/first-pr
 
 | Symptom | Cause |
 |---|---|
-| `No unpacked LVGL Safe package found in ...` | `include/` and `lib/` are missing from the repository root - extract the package there, or pass `-DLS_PACKAGE_PREFIX=<path>` |
+| `No unpacked LVGL Safe package for '<platform>' found in ...` | no `lvgl_safe-x.y.z-<platform>/` subdirectory was found for the host platform - extract the matching package as a sibling of <RepoFile path="CMakeLists.txt" inline /> (not directly into the repository root), or pass `-DLS_PACKAGE_PREFIX=<path>` |
 | `... does not look like an unpacked LVGL Safe package` | the path given to `-DLS_PACKAGE_PREFIX` is not the directory holding `include/` and `lib/` (`lib/cmake/lvgl_safe/lvgl_safeConfig.cmake` was not found there) |
 | SDL2 not found at configure time | install the SDL2 **development** package, not just the runtime |
 | A widget draws nothing, no error | its `width`/`height` are still 0, `common.hidden` is set, or it is a button in a `checked` state that was never given a color and opacity - those five states default to transparent |
